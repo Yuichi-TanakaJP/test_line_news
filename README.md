@@ -7,6 +7,7 @@
 
 | ファイル | 役割 |
 |---|---|
+| `.claude/skills/news/SKILL.md` | `/news <profile>` skill。調査〜`message.txt`生成の指示本体 |
 | `configs/*.json` | プロフィール。テーマ・優先ソース・出力構成を定義（**ここを編集して方向性を変える**） |
 | `send_line.py` | LINE Messaging API push 送信。`.env` または環境変数から認証情報を読む |
 | `message.txt` | 生成された送信本文（毎回上書き） |
@@ -34,14 +35,17 @@
 - `market.json` … 日本株・AI半導体・為替（07:30 JST）
 - `webdesign.json` … Webデザイン・フロントエンド（08:00 JST）※サンプル
 
-## 実行（Claude へのリクエスト文テンプレート）
+## 実行
 
-> `configs/market.json` を読み、その themes/sources/rules/sections に従って
-> 最新ニュースを調査し、`format` に従って `message.txt` を生成。
-> 内容を確認後、`python send_line.py message.txt` で LINE 送信。
+手動（Claude Code 内）:
 
-スケジュール（毎朝 7:30 JST）はこのリクエストを Claude の `/schedule`
-（リモート routine）に登録して自動実行する。
+> `/news market` … 調査して `message.txt` を生成 → `python send_line.py message.txt`
+
+自動（毎日 20:00 JST・Windowsタスク）:
+
+> `run_market_news.ps1 [profile]` が `claude -p "/news <profile>"` を headless 実行
+> → `message.txt` 生成 → `send_line.py` で送信。ログは `logs/`。
+> 既定プロフィールは `market`。
 
 ## 認証情報
 
