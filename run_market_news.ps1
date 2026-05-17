@@ -20,12 +20,12 @@ function Log($msg) {
 Log "=== START market_news ==="
 
 try {
-  $prompt = Get-Content -Raw -Path (Join-Path $Root "prompt.md")
-
-  # 1) Claude (headless) でリサーチ＆ message.txt 生成
-  Log "claude -p generating message.txt ..."
-  $prompt | & claude -p `
-      --allowed-tools "WebSearch,WebFetch,Read,Write,Glob" `
+  # 1) Claude (headless) で /news skill を起動し message.txt 生成
+  #    プロフィールは第1引数（既定: market）
+  $profile = if ($args.Count -ge 1 -and $args[0]) { $args[0] } else { "market" }
+  Log "claude -p '/news $profile' generating message.txt ..."
+  $null | & claude -p "/news $profile" `
+      --allowed-tools "Skill,WebSearch,WebFetch,Read,Write,Glob" `
       --permission-mode acceptEdits 2>&1 | Tee-Object -FilePath $Log -Append
   if ($LASTEXITCODE -ne 0) { throw "claude exited with code $LASTEXITCODE" }
 
