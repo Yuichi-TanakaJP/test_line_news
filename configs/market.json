@@ -1,0 +1,44 @@
+{
+  "profile": "market",
+  "title": "今日の市場メモ 🦉",
+  "schedule_jst": "20:00",
+  "themes": [
+    "日経平均・TOPIX・東証業種別・日本株に影響しそうなニュース",
+    "為替(特にドル円)・米国金利・日銀・FRB・原油・地政学リスク",
+    "AI・半導体 (OpenAI/Anthropic/Google/Microsoft/NVIDIA/AMD/TSMC/半導体製造装置/データセンター/電力需要)",
+    "日本株個別材料 (決算・上方下方修正・増配減配・自社株買い・大型株材料・半導体関連株・商社・高配当株)"
+  ],
+  "priority_sources_A": [
+    "各社IR", "日銀", "FRB", "JPX", "TDnet", "EDINET",
+    "OpenAI Blog", "Anthropic Blog", "NVIDIA Newsroom", "Microsoft Blog", "Google Blog"
+  ],
+  "priority_sources_B": [
+    "Reuters", "Bloomberg", "CNBC", "Yahoo!ファイナンス", "Kabutan", "Investing.com"
+  ],
+  "sections": [
+    {"name": "今日の重要ニュース", "count": 5, "fields": ["見出し", "要点", "日本株への影響", "出典URL"]},
+    {"name": "AI・半導体の注目材料", "fields": ["要点", "関連しそうな日本株テーマ"]},
+    {"name": "為替・金利・原油", "fields": ["ドル円", "米国金利", "原油", "日本株への影響"]},
+    {"name": "X投稿に使えそうな一言", "char_limit": 140, "fields": ["投稿案", "ハッシュタグ候補"]},
+    {"name": "出典URL一覧"}
+  ],
+  "impact_labels": ["追い風", "逆風", "中立", "要確認"],
+  "rules": [
+    "一次情報・信頼できる情報源を優先",
+    "出典URLを必ず残す",
+    "有料記事の本文を再現しない",
+    "事実と推測を分ける",
+    "同じニュースは重複除去する",
+    "影響は impact_labels のいずれかで分類する",
+    "強い断定を避ける",
+    "投資助言ではなく情報整理としてまとめる",
+    "LINEで読みやすいよう短く整理する",
+    "出典URLが取れない情報は使わない"
+  ],
+  "format": {
+    "type": "text",
+    "section_header_prefix": "▼ ",
+    "max_chars": 5000,
+    "footer": "※本メモは情報整理であり投資助言ではありません。事実と推測を分けて記載。価格・数値は報道ベースの概算で最新値は要確認。"
+  }
+}

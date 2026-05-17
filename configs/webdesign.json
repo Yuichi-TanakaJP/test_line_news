@@ -1,0 +1,43 @@
+{
+  "profile": "webdesign",
+  "title": "今日のWebデザインメモ 🎨",
+  "schedule_jst": "08:00",
+  "themes": [
+    "UI/UXトレンド・デザインシステム",
+    "CSS/フロントエンド新機能・ブラウザ対応",
+    "AIデザインツール (Figma/Canva/v0/Framer 等)",
+    "アクセシビリティ・Webパフォーマンス",
+    "実務に効くツール・ライブラリの新着"
+  ],
+  "priority_sources_A": [
+    "MDN", "web.dev", "Chrome Developers Blog", "WebKit Blog",
+    "Figma Blog", "各ツール公式リリースノート", "W3C"
+  ],
+  "priority_sources_B": [
+    "Smashing Magazine", "CSS-Tricks", "A List Apart", "Josh Comeau", "Zenn", "Qiita"
+  ],
+  "sections": [
+    {"name": "今日の注目ニュース", "count": 5, "fields": ["見出し", "要点", "実務への活かし方", "出典URL"]},
+    {"name": "新しく試せるツール/技術", "fields": ["要点", "ユースケース"]},
+    {"name": "X投稿に使えそうな一言", "char_limit": 140, "fields": ["投稿案", "ハッシュタグ候補"]},
+    {"name": "出典URL一覧"}
+  ],
+  "impact_labels": ["すぐ使える", "様子見", "実験的", "要確認"],
+  "rules": [
+    "一次情報(公式ドキュメント/リリースノート)を優先",
+    "出典URLを必ず残す",
+    "有料記事の本文を再現しない",
+    "事実と推測を分ける",
+    "同じ話題は重複除去する",
+    "影響は impact_labels のいずれかで分類する",
+    "強い断定を避ける",
+    "LINEで読みやすいよう短く整理する",
+    "出典URLが取れない情報は使わない"
+  ],
+  "format": {
+    "type": "text",
+    "section_header_prefix": "▼ ",
+    "max_chars": 5000,
+    "footer": "※本メモは情報整理です。仕様は公式ドキュメントで最新を要確認。"
+  }
+}
