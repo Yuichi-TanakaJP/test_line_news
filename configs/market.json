@@ -23,6 +23,13 @@
     {"name": "出典URL一覧"}
   ],
   "impact_labels": ["追い風", "逆風", "中立", "要確認"],
+  "recency": {
+    "max_age_hours": 36,
+    "prefer_today_jst": true,
+    "allow_older_if_new_development_today": true,
+    "exclude_if_older_than_hours": 72,
+    "must_show_date_per_item": true
+  },
   "rules": [
     "一次情報・信頼できる情報源を優先",
     "出典URLを必ず残す",
@@ -33,7 +40,10 @@
     "強い断定を避ける",
     "投資助言ではなく情報整理としてまとめる",
     "LINEで読みやすいよう短く整理する",
-    "出典URLが取れない情報は使わない"
+    "出典URLが取れない情報は使わない",
+    "鮮度: 実行日(JST)〜前営業日のニュースを最優先。recency 設定に従う",
+    "各ニュース見出しの末尾に発生日(MM/DD)を明記する",
+    "古い背景は1行以内で触れる程度に留め、本文で繰り返さない"
   ],
   "format": {
     "type": "text",
