@@ -6,11 +6,16 @@
   "transcript_file": "transcript.txt",
   "channels": [
     {
-      "name": "(監視チャンネル名をここに)",
-      "channel_id": "(UCxxxx... を後で設定)",
-      "note": "当面は手動でrun_youtube_stocks.ps1に動画URLを渡して運用。チャンネル自動監視はYouTube Data APIで後付け予定"
+      "name": "Sho's投資情報局",
+      "channel_id": "UCK9Pl6bbWqMC_x7IDca2tIg",
+      "note": "RSSフィード(APIキー不要)で新着を監視"
     }
   ],
+  "watch": {
+    "max_new_per_run": 1,
+    "state_file": "processed_videos.json",
+    "note": "1回の実行で処理する新着上限。RSS監視のため YouTube Data API キーは不要"
+  },
   "extraction": {
     "view_labels": ["強気", "弱気", "中立/様子見", "売り", "買い", "保有継続", "利確"],
     "fields_per_stock": ["銘柄名", "証券コード", "市場(日本株/米国株)", "見立て", "根拠", "発言の要点"],

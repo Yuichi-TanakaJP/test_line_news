@@ -62,7 +62,9 @@
 | `fetch_transcript.py` | 動画URL/IDの字幕を取得し `transcript.txt` に保存（`youtube-transcript-api`） |
 | `.claude/skills/youtube-stocks/SKILL.md` | `/youtube-stocks` skill。`transcript.txt`→銘柄+見立て抽出→`message.txt` |
 | `configs/youtube_stocks.json` | 抽出ルール・出力体裁・監視チャンネル（**ここを編集**） |
-| `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数） |
+| `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数。手動用） |
+| `check_new_videos.py` | チャンネルRSSで新着検知（APIキー不要）。処理済みは `processed_videos.json` で管理 |
+| `run_youtube_watch.ps1` | 新着検知→未処理動画だけ取得→抽出→送信→記録（定期実行用・引数不要） |
 
 処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `send_line.py` が送信** に分離。
 
@@ -88,6 +90,30 @@ python -m venv .venv
 ```
 
 Claude Code 内で手動実行する場合は、先に `transcript.txt` を用意してから `/youtube-stocks`。
+
+### 自動監視（チャンネル新着 → 自動配信）
+
+`configs/youtube_stocks.json` の `channels[].channel_id` に監視対象を設定し、RSSフィード
+（`https://www.youtube.com/feeds/videos.xml?channel_id=...`）で新着を検知する。**APIキー不要・クォータ消費ゼロ**。
+
+初回だけ既存動画を基準化（過去動画の一括処理を防ぐ）:
+
+```powershell
+.\.venv\Scripts\python.exe check_new_videos.py --init
+```
+
+以降は定期実行。新着があれば 取得→抽出→送信→記録 まで自動:
+
+```powershell
+.\run_youtube_watch.ps1
+```
+
+- 新着なし→何もせず正常終了。1回の処理上限は `watch.max_new_per_run`（既定1）。
+- RSSは断続的に空応答を返すため `fetch_transcript`...ではなく `check_new_videos` 側でリトライ。取得全滅時は「新着なし」と区別してスキップ（次回再試行・取りこぼし防止）。
+- 送信成功した動画だけ `processed_videos.json` に記録するので、失敗は次回再試行される。
+
+毎朝などの定期実行は `run_market_news.ps1` と同様にWindowsタスクへ登録する
+（タスク名を分け、実行を `run_youtube_watch.ps1` にする）。
 
 ### 注意
 

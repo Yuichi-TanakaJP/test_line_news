@@ -8,3 +8,4 @@ venv/
 logs/
 message.txt
 transcript.txt
+processed_videos.json
