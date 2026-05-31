@@ -108,12 +108,33 @@ Claude Code 内で手動実行する場合は、先に `transcript.txt` を用�
 .\run_youtube_watch.ps1
 ```
 
-- 新着なし→何もせず正常終了。1回の処理上限は `watch.max_new_per_run`（既定1）。
-- RSSは断続的に空応答を返すため `fetch_transcript`...ではなく `check_new_videos` 側でリトライ。取得全滅時は「新着なし」と区別してスキップ（次回再試行・取りこぼし防止）。
-- 送信成功した動画だけ `processed_videos.json` に記録するので、失敗は次回再試行される。
+- 新着なし→何もせず正常終了。1回の処理上限は `watch.max_new_per_run`（既定3）。
+- RSSは断続的に空応答を返すため `check_new_videos` 側でリトライ。取得全滅時は「新着なし」と区別してスキップ（次回再試行・取りこぼし防止）。
+- 送信成功した動画だけ `processed_videos.json` に記録するので、失敗は次回再試行される（`claude -p` がPro上限に当たって抽出失敗した時も同様に再試行）。
 
-毎朝などの定期実行は `run_market_news.ps1` と同様にWindowsタスクへ登録する
-（タスク名を分け、実行を `run_youtube_watch.ps1` にする）。
+#### 種別の自動判定（定期/ライブ）
+
+このチャンネルは1日に2セッション（**夕方〜16:50の定期分析** と **夜22時のライブ**）あり、
+アーカイブの公開時刻はバラバラ。skill が文字起こし冒頭から種別を判定し、出力の重点を変える
+（`configs/youtube_stocks.json` の `video_types`）:
+- **定期/全体**: 全体動向・マクロ・需給を厚く、個別銘柄は主要なものに絞る
+- **ライブ/個別**: 個別銘柄を網羅
+
+タイトル行先頭に `[定期/全体]` `[ライブ/個別]` を付ける。公開時刻で種別を撃ち分けられないため、
+1日2回まわして新着を全部拾う方式（`max_new_per_run`=3、ID重複防止で二重送信なし）。
+
+#### 定期実行（登録済み Windows タスク）
+
+- タスク名: `YouTubeStocksLINE_Watch`
+- スケジュール: 毎日 **08:00 / 20:00 JST**（`run_youtube_watch.ps1`）
+- 設定: StartWhenAvailable / ExecutionTimeLimit 1時間 / 多重起動は無視
+
+```powershell
+Get-ScheduledTask -TaskName YouTubeStocksLINE_Watch          # 状態確認
+Disable-ScheduledTask -TaskName YouTubeStocksLINE_Watch      # 一時停止
+Enable-ScheduledTask  -TaskName YouTubeStocksLINE_Watch      # 再開
+Unregister-ScheduledTask -TaskName YouTubeStocksLINE_Watch -Confirm:$false  # 削除
+```
 
 ### 注意
 
