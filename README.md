@@ -3,6 +3,12 @@
 設定ファイル（プロフィール）を差し替えるだけで、ジャンルを変えて使える
 「毎日リサーチ → LINE 送信」ツール。本運用中（毎日 20:00 JST）。
 
+2系統のパイプラインを同居:
+- **news** … Web調査ベースの毎日ニュースメモ（`/news` skill）
+- **youtube-stocks** … 株YouTube動画の字幕から銘柄＋見立てを抽出（`/youtube-stocks` skill）
+
+どちらも「LLMで本文生成 → `message.txt` → `send_line.py` で送信」を共有する。
+
 ## 構成
 
 | ファイル | 役割 |
@@ -46,6 +52,49 @@
 > `run_market_news.ps1 [profile]` が `claude -p "/news <profile>"` を headless 実行
 > → `message.txt` 生成 → `send_line.py` で送信。ログは `logs/`。
 > 既定プロフィールは `market`。
+
+## 株YouTube銘柄メモ（youtube-stocks）
+
+株取引YouTube動画の**字幕から銘柄と配信者の見立てを抽出**して LINE 送信する。
+
+| ファイル | 役割 |
+|---|---|
+| `fetch_transcript.py` | 動画URL/IDの字幕を取得し `transcript.txt` に保存（`youtube-transcript-api`） |
+| `.claude/skills/youtube-stocks/SKILL.md` | `/youtube-stocks` skill。`transcript.txt`→銘柄+見立て抽出→`message.txt` |
+| `configs/youtube_stocks.json` | 抽出ルール・出力体裁・監視チャンネル（**ここを編集**） |
+| `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数） |
+
+処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `send_line.py` が送信** に分離。
+
+### セットアップ（初回のみ）
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+```
+
+### 実行
+
+字幕取得だけ確認:
+
+```powershell
+.\.venv\Scripts\python.exe fetch_transcript.py "https://www.youtube.com/live/XXXXXXXXXXX" --out transcript.txt
+```
+
+通しで実行（取得→抽出→送信）:
+
+```powershell
+.\run_youtube_stocks.ps1 "https://www.youtube.com/live/XXXXXXXXXXX"
+```
+
+Claude Code 内で手動実行する場合は、先に `transcript.txt` を用意してから `/youtube-stocks`。
+
+### 注意
+
+- `youtube-transcript-api` は**データセンターIPからブロックされる**ことがある（CI不可な場合あり）。ローカル実行推奨。
+- **ライブ配信は字幕生成が遅れる/無い**ことがある。アーカイブ化後に取得する。
+- 自動字幕は銘柄名・コードを誤変換するため、skill が文脈補正し、**口頭コードは信用せず**不確実なものは「要確認」に回す。
+- チャンネル自動監視（YouTube Data API）は未実装。当面は動画URLを手動で渡す運用。
 
 ## 認証情報
 

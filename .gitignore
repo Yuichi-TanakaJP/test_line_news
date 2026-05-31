@@ -7,3 +7,4 @@ venv/
 # generated at runtime
 logs/
 message.txt
+transcript.txt
