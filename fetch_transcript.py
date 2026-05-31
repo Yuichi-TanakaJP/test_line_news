@@ -100,12 +100,15 @@ def main() -> None:
         print(f"ERROR: transcript for {video_id} was empty.", file=sys.stderr)
         sys.exit(1)
 
+    sys.stdout.reconfigure(encoding="utf-8")
     if args.out:
         with open(args.out, "w", encoding="utf-8") as f:
             f.write(text)
-        print(f"OK wrote {len(text)} chars to {args.out}", file=sys.stderr)
+        # Success message goes to stdout (not stderr): PowerShell runners use
+        # $ErrorActionPreference=Stop, which treats any native stderr output as
+        # a terminating error even on exit code 0.
+        print(f"OK wrote {len(text)} chars to {args.out}")
     else:
-        sys.stdout.reconfigure(encoding="utf-8")
         print(text)
 
 
