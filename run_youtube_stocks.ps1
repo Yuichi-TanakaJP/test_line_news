@@ -39,8 +39,10 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "fetch_transcript.py failed with code $LASTEXITCODE" }
 
   # 2) Claude (headless) で /youtube-stocks skill を起動し message.txt 生成
+  #    プロンプトは明示形にする。引数だけ("/youtube-stocks")だと稀に
+  #    「パスが送られた」と誤解され何も実行されないことがあるため。
   Log "claude -p '/youtube-stocks' generating message.txt ..."
-  $null | & claude -p "/youtube-stocks" `
+  $null | & claude -p "/youtube-stocks スキルを実行して、transcript.txt から message.txt を生成してください" `
       --model sonnet `
       --allowed-tools "Skill,Read,Write,Glob" `
       --permission-mode acceptEdits 2>&1 | Tee-Object -FilePath $Log -Append
