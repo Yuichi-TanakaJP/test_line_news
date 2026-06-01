@@ -20,10 +20,15 @@ function Log($msg) {
 Log "=== START market_news ==="
 
 try {
+  Get-ChildItem $LogDir -Filter "*.log" -File |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+    Remove-Item -Force
+
   # 1) Claude (headless) で /news skill を起動し message.txt 生成
   #    プロフィールは第1引数（既定: market）
   $profile = if ($args.Count -ge 1 -and $args[0]) { $args[0] } else { "market" }
   Log "claude -p '/news $profile' generating message.txt ..."
+  Remove-Item (Join-Path $Root "message.txt") -ErrorAction SilentlyContinue
   $null | & claude -p "/news $profile" `
       --allowed-tools "Skill,WebSearch,WebFetch,Read,Write,Glob" `
       --permission-mode acceptEdits 2>&1 | Tee-Object -FilePath $Log -Append

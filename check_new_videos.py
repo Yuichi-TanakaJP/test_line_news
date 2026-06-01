@@ -35,6 +35,13 @@ def load_config() -> dict:
         return json.load(f)
 
 
+def configured_state_path(cfg: dict) -> str:
+    state = cfg.get("watch", {}).get("state_file") or DEFAULT_STATE
+    if os.path.isabs(state):
+        return state
+    return os.path.join(HERE, state)
+
+
 def load_state(path: str) -> set[str]:
     if not os.path.exists(path):
         return set()
@@ -44,8 +51,11 @@ def load_state(path: str) -> set[str]:
 
 
 def save_state(path: str, seen: set[str]) -> None:
-    with open(path, "w", encoding="utf-8") as f:
+    tmp_path = f"{path}.tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
         json.dump({"processed": sorted(seen)}, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    os.replace(tmp_path, path)
 
 
 def _fetch_once(channel_id: str) -> list[dict]:
@@ -112,16 +122,17 @@ def main() -> None:
     g.add_argument("--mark", metavar="VIDEO_ID", help="指定IDを処理済みに記録")
     g.add_argument("--init", action="store_true",
                    help="現在のフィード全件を処理済みにして基準化")
-    parser.add_argument("--state", default=DEFAULT_STATE, help="状態ファイルのパス")
+    parser.add_argument("--state", default=None, help="状態ファイルのパス")
     args = parser.parse_args()
 
     sys.stdout.reconfigure(encoding="utf-8")
     cfg = load_config()
-    seen = load_state(args.state)
+    state_path = args.state or configured_state_path(cfg)
+    seen = load_state(state_path)
 
     if args.mark:
         seen.add(args.mark)
-        save_state(args.state, seen)
+        save_state(state_path, seen)
         print(f"OK marked {args.mark} as processed ({len(seen)} total)")
         return
 
@@ -129,7 +140,7 @@ def main() -> None:
         entries, errors = all_entries(cfg)
         for e in entries:
             seen.add(e["id"])
-        save_state(args.state, seen)
+        save_state(state_path, seen)
         print(f"OK seeded {len(entries)} feed videos as processed "
               f"({len(seen)} total in state)", file=sys.stderr)
         if errors:
