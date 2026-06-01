@@ -33,8 +33,13 @@ function Log($msg) {
 Log "=== START youtube_stocks ($VideoUrl) ==="
 
 try {
+  Get-ChildItem $LogDir -Filter "*.log" -File |
+    Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
+    Remove-Item -Force
+
   # 1) 字幕取得 → transcript.txt
   Log "fetching transcript ..."
+  Remove-Item (Join-Path $Root "transcript.txt") -ErrorAction SilentlyContinue
   & $Py fetch_transcript.py $VideoUrl --out transcript.txt 2>&1 | Tee-Object -FilePath $Log -Append
   if ($LASTEXITCODE -ne 0) { throw "fetch_transcript.py failed with code $LASTEXITCODE" }
 
@@ -42,6 +47,7 @@ try {
   #    プロンプトは明示形にする。引数だけ("/youtube-stocks")だと稀に
   #    「パスが送られた」と誤解され何も実行されないことがあるため。
   Log "claude -p '/youtube-stocks' generating message.txt ..."
+  Remove-Item (Join-Path $Root "message.txt") -ErrorAction SilentlyContinue
   $null | & claude -p "/youtube-stocks スキルを実行して、transcript.txt から message.txt を生成してください" `
       --model sonnet `
       --allowed-tools "Skill,Read,Write,Glob" `
