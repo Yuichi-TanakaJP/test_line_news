@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>test_line_news リポジトリ機能仕様まとめ</title>
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --panel: #ffffff;
+      --ink: #1f2933;
+      --muted: #667085;
+      --line: #d9dee7;
+      --accent: #1667d9;
+      --accent-soft: #e8f1ff;
+      --ok: #0f766e;
+      --warn: #a15c07;
+      --danger: #b42318;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", sans-serif;
+      line-height: 1.65;
+    }
+
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .wrap {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      padding: 40px 0 28px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 30px;
+      line-height: 1.25;
+    }
+
+    .lead {
+      max-width: 880px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    main {
+      padding: 28px 0 56px;
+    }
+
+    section {
+      margin: 0 0 22px;
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    h2 {
+      margin: 0 0 14px;
+      font-size: 21px;
+      line-height: 1.35;
+    }
+
+    h3 {
+      margin: 22px 0 8px;
+      font-size: 17px;
+    }
+
+    p { margin: 0 0 12px; }
+
+    ul, ol {
+      margin: 8px 0 0 22px;
+      padding: 0;
+    }
+
+    li { margin: 4px 0; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 14px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: #f2f4f7;
+      font-weight: 700;
+    }
+
+    code {
+      padding: 2px 5px;
+      border-radius: 4px;
+      background: #eef2f6;
+      font-family: Consolas, "SFMono-Regular", monospace;
+      font-size: 0.92em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .feature-card {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 16px;
+      padding: 22px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .feature-main h3 {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 0;
+      margin-bottom: 10px;
+      font-size: 20px;
+      line-height: 1.4;
+    }
+
+    .feature-main p {
+      max-width: 760px;
+      margin-bottom: 0;
+      font-size: 15px;
+    }
+
+    .feature-points {
+      padding: 14px 16px;
+      border: 1px solid #d7e3f2;
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .feature-points h4 {
+      margin: 0 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .feature-points ul {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px 28px;
+      margin-top: 0;
+      margin-left: 20px;
+    }
+
+    .tech-note {
+      margin-top: 2px;
+      padding: 11px 13px;
+      border-left: 4px solid #99d6cb;
+      border-radius: 6px;
+      background: #effaf8;
+      color: #245b54;
+      font-size: 14px;
+    }
+
+    .flow {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .step {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--accent);
+      border-radius: 6px;
+      background: #fbfcfe;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-right: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .note {
+      padding: 12px 14px;
+      border-radius: 6px;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #7c3d12;
+    }
+
+    .diagram-shell {
+      margin-top: 16px;
+      padding: 18px;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fbfcfe;
+    }
+
+    .system-map {
+      min-width: 980px;
+      display: grid;
+      grid-template-columns: 1.05fr 1.2fr 0.95fr;
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .zone {
+      min-height: 100%;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+
+    .zone h3 {
+      margin-top: 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .node {
+      margin: 12px 0;
+      padding: 12px;
+      border: 1px solid #cfd8e3;
+      border-radius: 7px;
+      background: #ffffff;
+    }
+
+    .node strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .node small {
+      display: block;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+
+    .node.primary {
+      border-color: #9cc4ff;
+      background: #f1f7ff;
+    }
+
+    .node.shared {
+      border-color: #99d6cb;
+      background: #effaf8;
+    }
+
+    .connector {
+      min-width: 980px;
+      display: grid;
+      grid-template-columns: 1.05fr 60px 1.2fr 60px 0.95fr;
+      align-items: center;
+      margin: 12px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .arrow-line {
+      height: 2px;
+      background: var(--accent);
+      position: relative;
+    }
+
+    .arrow-line::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -4px;
+      border-left: 8px solid var(--accent);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    .sequence {
+      min-width: 1080px;
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      padding: 4px 0 8px;
+    }
+
+    .participant {
+      position: relative;
+      z-index: 1;
+      padding: 10px;
+      min-height: 58px;
+      border: 1px solid #cfd8e3;
+      border-radius: 7px;
+      background: #ffffff;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    .participant small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .lifeline {
+      position: absolute;
+      top: 72px;
+      bottom: 0;
+      width: 1px;
+      border-left: 2px dashed #c9d2df;
+    }
+
+    .lifeline:nth-of-type(7) { left: calc((100% / 6) * 0.5); }
+    .lifeline:nth-of-type(8) { left: calc((100% / 6) * 1.5); }
+    .lifeline:nth-of-type(9) { left: calc((100% / 6) * 2.5); }
+    .lifeline:nth-of-type(10) { left: calc((100% / 6) * 3.5); }
+    .lifeline:nth-of-type(11) { left: calc((100% / 6) * 4.5); }
+    .lifeline:nth-of-type(12) { left: calc((100% / 6) * 5.5); }
+
+    .seq-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 10px;
+      min-height: 54px;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .message {
+      padding: 9px 11px;
+      border-radius: 6px;
+      border: 1px solid #b7c7dc;
+      background: #ffffff;
+      color: var(--ink);
+      font-size: 13px;
+      line-height: 1.45;
+      box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+    }
+
+    .message.send {
+      border-color: #9cc4ff;
+      background: #f1f7ff;
+    }
+
+    .message.return {
+      border-style: dashed;
+      border-color: #99d6cb;
+      background: #effaf8;
+    }
+
+    .span-1-2 { grid-column: 1 / 3; }
+    .span-2-3 { grid-column: 2 / 4; }
+    .span-2-4 { grid-column: 2 / 5; }
+    .span-3-4 { grid-column: 3 / 5; }
+    .span-3-5 { grid-column: 3 / 6; }
+    .span-4-5 { grid-column: 4 / 6; }
+    .span-5-6 { grid-column: 5 / 7; }
+    .span-4-6 { grid-column: 4 / 7; }
+
+    .diagram-caption {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .ok { color: var(--ok); font-weight: 700; }
+    .warn { color: var(--warn); font-weight: 700; }
+    .danger { color: var(--danger); font-weight: 700; }
+
+    @media (max-width: 760px) {
+      .grid { grid-template-columns: 1fr; }
+      .feature-card { grid-template-columns: 1fr; }
+      .feature-points ul { grid-template-columns: 1fr; }
+      section { padding: 18px; }
+      h1 { font-size: 25px; }
+      table { font-size: 13px; }
+      th, td { padding: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap hero">
+      <h1>test_line_news 機能仕様まとめ</h1>
+      <p class="lead">
+        このリポジトリは、毎日の市場ニュースや株式系YouTube動画の内容を自動で要約し、
+        LINEに短いメモとして届けるためのローカル運用ツールです。ユーザーは「どんな情報を集めたいか」を設定しておけば、
+        ツールがニュース調査、YouTube字幕の取得、本文作成、LINE送信までを一連の流れで実行します。
+      </p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section>
+      <h2>1. ユーザーレベルで提供する機能</h2>
+      <p>
+        このツールの利用者が受け取るものは、大きく2種類です。1つはその日の市場ニュースをまとめたメモ、
+        もう1つは株式系YouTube動画で話された銘柄や相場観を整理したメモです。どちらも最終的にはLINEのテキストメッセージとして届きます。
+      </p>
+      <div class="feature-list">
+        <article class="feature-card">
+          <div class="feature-main">
+            <h3><span class="badge">news</span>毎日の市場ニュースをLINEで受け取る</h3>
+            <p>
+              その日に起きた日本株や為替、金利、AI・半導体関連のニュースを調べ、
+              重要なポイントだけをLINEで読める長さにまとめます。朝刊やニュースサイトを一つずつ追わなくても、
+              投資や市場チェックに必要な材料を短時間で確認できます。
+            </p>
+          </div>
+          <div class="feature-points">
+            <h4>主な内容</h4>
+            <ul>
+              <li>日本株、為替、金利、原油、AI・半導体、個別材料などをまとめる</li>
+              <li>信頼しやすい公式発表や主要メディアを優先して参照する</li>
+              <li>実行日JSTと前営業日のニュースを中心に採用する</li>
+              <li>標準設定では毎日20:00 JSTに自動実行され、LINEへ送信される</li>
+            </ul>
+          </div>
+          <div class="tech-note">
+            技術メモ: 標準プロフィール <code>market</code> の設定を読み、<code>news</code> スキルが本文を作成します。
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-main">
+            <h3><span class="badge">youtube-stocks</span>株式YouTubeの要点をLINEで受け取る</h3>
+            <p>
+              株式系YouTube動画の字幕を読み取り、動画内で触れられた銘柄、配信者の見立て、
+              その根拠を抜き出して整理します。長い動画を全部見返さなくても、
+              どの銘柄について何が話されたかを短時間で把握できます。
+            </p>
+          </div>
+          <div class="feature-points">
+            <h4>主な内容</h4>
+            <ul>
+              <li>動画URLを指定して手動で処理できる</li>
+              <li>登録したYouTubeチャンネルの新着動画を自動で検知できる</li>
+              <li>一度送信した動画は記録されるため、同じ動画を重複送信しにくい</li>
+              <li>標準設定では毎日08:00 / 20:00 JSTに新着確認が走る</li>
+            </ul>
+          </div>
+          <div class="tech-note">
+            技術メモ: YouTube RSSで新着を確認し、<code>transcript.txt</code> を作ったうえで
+            <code>youtube-stocks</code> スキルがLINE向けの本文に変換します。
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section>
+      <h2>2. 関連コンポーネント</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>コンポーネント</th>
+            <th>役割</th>
+            <th>主な入出力</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>.agents/skills/news/SKILL.md</code></td>
+            <td>ニュース調査から <code>message.txt</code> 生成までのLLM指示。</td>
+            <td>入力: <code>configs/&lt;profile&gt;.json</code>、Web情報 / 出力: <code>message.txt</code></td>
+          </tr>
+          <tr>
+            <td><code>.agents/skills/youtube-stocks/SKILL.md</code></td>
+            <td>YouTube文字起こしから銘柄別メモを抽出するLLM指示。</td>
+            <td>入力: <code>configs/youtube_stocks.json</code>、<code>transcript.txt</code> / 出力: <code>message.txt</code></td>
+          </tr>
+          <tr>
+            <td><code>configs/*.json</code></td>
+            <td>配信テーマ、抽出ルール、出力構成、文字数上限、監視チャンネルを定義。</td>
+            <td><code>market.json</code>、<code>webdesign.json</code>、<code>youtube_stocks.json</code></td>
+          </tr>
+          <tr>
+            <td><code>send_line.py</code></td>
+            <td>LINE Messaging APIのpushエンドポイントへテキストを送信。</td>
+            <td>入力: <code>message.txt</code> またはstdin / 認証: <code>.env</code> または環境変数</td>
+          </tr>
+          <tr>
+            <td><code>fetch_transcript.py</code></td>
+            <td>YouTube動画URLまたは動画IDから字幕を取得し、本文テキスト化。</td>
+            <td>入力: YouTube URL/ID / 出力: <code>transcript.txt</code></td>
+          </tr>
+          <tr>
+            <td><code>check_new_videos.py</code></td>
+            <td>YouTubeチャンネルRSSから未処理の新着動画を検知・記録。</td>
+            <td>入力: <code>configs/youtube_stocks.json</code> / 状態: <code>processed_videos.json</code></td>
+          </tr>
+          <tr>
+            <td><code>run_market_news.ps1</code></td>
+            <td>ニュース生成とLINE送信を通しで実行するPowerShellランナー。</td>
+            <td>ログ: <code>logs/run_YYYYMMDD_HHMMSS.log</code></td>
+          </tr>
+          <tr>
+            <td><code>run_youtube_stocks.ps1</code></td>
+            <td>動画URL指定で字幕取得、抽出、LINE送信を通しで実行。</td>
+            <td>ログ: <code>logs/run_youtube_YYYYMMDD_HHMMSS.log</code></td>
+          </tr>
+          <tr>
+            <td><code>run_youtube_watch.ps1</code></td>
+            <td>新着監視、字幕取得、抽出、送信、処理済み記録を自動実行。</td>
+            <td>ログ: <code>logs/watch_YYYYMMDD_HHMMSS.log</code>、ロック: <code>.youtube_watch.lock</code></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>3. システム構成図</h2>
+      <p>
+        ユーザー操作、ローカルランナー、LLMスキル、外部サービスの関係を、運用単位で分けた構成です。
+        2つの配信系統は生成元が異なりますが、最終的には共通の <code>message.txt</code> と <code>send_line.py</code> に合流します。
+      </p>
+      <div class="diagram-shell" aria-label="システム構成図">
+        <div class="system-map">
+          <div class="zone">
+            <h3>ユーザー / スケジューラ</h3>
+            <div class="node primary">
+              <strong>手動実行</strong>
+              <small><code>run_market_news.ps1</code><br><code>run_youtube_stocks.ps1 &lt;動画URL&gt;</code><br><code>run_youtube_watch.ps1</code></small>
+            </div>
+            <div class="node">
+              <strong>Windowsタスク</strong>
+              <small><code>MarketNewsLINE_Daily</code><br>毎日20:00 JST</small>
+            </div>
+            <div class="node">
+              <strong>Windowsタスク</strong>
+              <small><code>YouTubeStocksLINE_Watch</code><br>毎日08:00 / 20:00 JST</small>
+            </div>
+          </div>
+
+          <div class="zone">
+            <h3>ローカル処理基盤</h3>
+            <div class="node primary">
+              <strong>PowerShellランナー</strong>
+              <small>ログ作成、古いログ削除、失敗時の終了コード管理、YouTube監視時のロック制御</small>
+            </div>
+            <div class="node">
+              <strong>設定ファイル</strong>
+              <small><code>configs/market.json</code>: ニューステーマ・鮮度・出典<br><code>configs/youtube_stocks.json</code>: 監視チャンネル・抽出ルール</small>
+            </div>
+            <div class="node">
+              <strong>Python補助処理</strong>
+              <small><code>check_new_videos.py</code>: RSS新着検知<br><code>fetch_transcript.py</code>: 字幕取得<br><code>send_line.py</code>: LINE送信</small>
+            </div>
+            <div class="node shared">
+              <strong>共通成果物</strong>
+              <small><code>transcript.txt</code>: YouTube字幕<br><code>message.txt</code>: LINE送信用本文<br><code>processed_videos.json</code>: 処理済み動画ID<br><code>logs/</code>: 実行ログ</small>
+            </div>
+          </div>
+
+          <div class="zone">
+            <h3>外部サービス / LLM</h3>
+            <div class="node primary">
+              <strong>Claude / Codex Skill</strong>
+              <small><code>news</code>: Web調査から本文生成<br><code>youtube-stocks</code>: 字幕から銘柄メモ生成</small>
+            </div>
+            <div class="node">
+              <strong>Web / YouTube</strong>
+              <small>ニュースソース、一次情報、YouTube RSS、YouTube字幕</small>
+            </div>
+            <div class="node shared">
+              <strong>LINE Messaging API</strong>
+              <small><code>/v2/bot/message/push</code> へテキストメッセージを送信</small>
+            </div>
+          </div>
+        </div>
+        <div class="connector" aria-hidden="true">
+          <div>起動・スケジュール</div>
+          <div class="arrow-line"></div>
+          <div>生成・状態管理</div>
+          <div class="arrow-line"></div>
+          <div>調査・字幕取得・LINE配信</div>
+        </div>
+      </div>
+      <p class="diagram-caption">
+        構成上の境界: このリポジトリはローカルPC上で動く実行基盤であり、ニュース調査・字幕取得・LINE送信は外部サービスに依存します。
+      </p>
+    </section>
+
+    <section>
+      <h2>4. 通信フロー</h2>
+      <h3>ニュースメモ配信</h3>
+      <div class="flow">
+        <div class="step">1. ユーザーまたはWindowsタスクが <code>run_market_news.ps1 [profile]</code> を起動する。</div>
+        <div class="step">2. ランナーが <code>claude -p "/news &lt;profile&gt;"</code> をheadless実行する。</div>
+        <div class="step">3. <code>news</code> スキルが設定ファイルを読み、WebSearch / WebFetchで最新ニュースを調査する。</div>
+        <div class="step">4. スキルがLINE向け本文を <code>message.txt</code> に上書き保存する。</div>
+        <div class="step">5. <code>send_line.py</code> が <code>.env</code> の認証情報を読み、LINE Messaging APIへpush送信する。</div>
+        <div class="step">6. 実行結果とエラーは <code>logs/</code> に記録される。</div>
+      </div>
+
+      <h3>YouTube銘柄メモ配信</h3>
+      <div class="flow">
+        <div class="step">1. 手動実行では <code>run_youtube_stocks.ps1 &lt;動画URL&gt;</code>、自動実行では <code>run_youtube_watch.ps1</code> を起動する。</div>
+        <div class="step">2. 自動実行時は <code>check_new_videos.py --list</code> がYouTube RSSから未処理IDを取得する。</div>
+        <div class="step">3. <code>fetch_transcript.py</code> が字幕を取得し、<code>transcript.txt</code> に保存する。</div>
+        <div class="step">4. <code>claude -p</code> が <code>youtube-stocks</code> スキルを実行し、字幕だけを根拠に <code>message.txt</code> を生成する。</div>
+        <div class="step">5. <code>send_line.py</code> がLINEへ送信する。</div>
+        <div class="step">6. 送信成功時のみ <code>check_new_videos.py --mark &lt;videoId&gt;</code> で処理済みに記録する。</div>
+      </div>
+    </section>
+
+    <section>
+      <h2>5. シーケンス図</h2>
+      <h3>ニュースメモ配信シーケンス</h3>
+      <div class="diagram-shell" aria-label="ニュースメモ配信シーケンス図">
+        <div class="sequence">
+          <div class="participant">ユーザー / Windowsタスク<small>起動元</small></div>
+          <div class="participant">run_market_news.ps1<small>ランナー</small></div>
+          <div class="participant">news Skill<small>LLM指示</small></div>
+          <div class="participant">Web情報源<small>一次情報 / 報道</small></div>
+          <div class="participant">message.txt<small>生成本文</small></div>
+          <div class="participant">LINE API<small>push送信</small></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+
+          <div class="seq-row">
+            <div class="message send span-1-2">1. <code>run_market_news.ps1 [profile]</code> を起動</div>
+          </div>
+          <div class="seq-row">
+            <div class="message span-2-3">2. 古いログを削除し、今回ログを作成</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-2-3">3. <code>claude -p "/news &lt;profile&gt;"</code> を実行</div>
+          </div>
+          <div class="seq-row">
+            <div class="message span-3-4">4. <code>configs/&lt;profile&gt;.json</code> を読み、調査テーマと鮮度条件を確定</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-3-5">5. 実行日JST・前営業日を中心にWebSearch / WebFetch</div>
+          </div>
+          <div class="seq-row">
+            <div class="message return span-3-5">6. URL付きニュース、日付、影響分類を整理</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-3-5">7. 最大5000文字のLINE向け本文を <code>message.txt</code> に上書き</div>
+          </div>
+          <div class="seq-row">
+            <div class="message span-2-5">8. ファイル作成とサイズを確認</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-2-6">9. <code>send_line.py message.txt</code> が認証情報を読み、LINE push送信</div>
+          </div>
+          <div class="seq-row">
+            <div class="message return span-5-6">10. 成功時 <code>OK 200</code>、失敗時はHTTP本文をログへ記録</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>YouTube銘柄メモ配信シーケンス</h3>
+      <div class="diagram-shell" aria-label="YouTube銘柄メモ配信シーケンス図">
+        <div class="sequence">
+          <div class="participant">ユーザー / Windowsタスク<small>起動元</small></div>
+          <div class="participant">run_youtube_watch.ps1<small>監視ランナー</small></div>
+          <div class="participant">YouTube RSS / 字幕<small>外部取得</small></div>
+          <div class="participant">youtube-stocks Skill<small>LLM抽出</small></div>
+          <div class="participant">message / state<small>本文・処理済み</small></div>
+          <div class="participant">LINE API<small>push送信</small></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+          <div class="lifeline"></div>
+
+          <div class="seq-row">
+            <div class="message send span-1-2">1. <code>run_youtube_watch.ps1</code> を起動</div>
+          </div>
+          <div class="seq-row">
+            <div class="message span-2-3">2. ロックファイル確認。多重起動中なら正常終了</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-2-4">3. <code>check_new_videos.py --list</code> がYouTube RSSを取得</div>
+          </div>
+          <div class="seq-row">
+            <div class="message return span-2-5">4. <code>processed_videos.json</code> 未登録の動画IDだけ返す</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-2-4">5. 各動画について <code>fetch_transcript.py</code> が字幕を取得</div>
+          </div>
+          <div class="seq-row">
+            <div class="message return span-3-5">6. <code>transcript.txt</code> に文字起こしを保存</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-2-4">7. <code>claude -p</code> で <code>youtube-stocks</code> を実行</div>
+          </div>
+          <div class="seq-row">
+            <div class="message span-4-5">8. 字幕だけを根拠に、動画種別・銘柄・見立て・根拠を抽出</div>
+          </div>
+          <div class="seq-row">
+            <div class="message return span-4-5">9. <code>message.txt</code> を上書き生成</div>
+          </div>
+          <div class="seq-row">
+            <div class="message send span-2-6">10. <code>send_line.py message.txt</code> がLINE push送信</div>
+          </div>
+          <div class="seq-row">
+            <div class="message return span-5-6">11. 送信成功時のみ <code>check_new_videos.py --mark &lt;videoId&gt;</code></div>
+          </div>
+          <div class="seq-row">
+            <div class="message span-2-5">12. 失敗時は未処理のまま残し、次回実行で再試行</div>
+          </div>
+        </div>
+      </div>
+      <p class="diagram-caption">
+        YouTube系は「検知」「字幕取得」「LLM抽出」「送信」「処理済み記録」を分離しているため、途中失敗した動画は次回再試行されます。
+      </p>
+    </section>
+
+    <section>
+      <h2>6. 主要仕様</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>領域</th>
+            <th>仕様</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>共通出力</td>
+            <td><code>message.txt</code> にLINE送信用テキストを上書き保存する。送信本文はLINEテキストメッセージ上限に合わせて最大5000文字を想定。</td>
+          </tr>
+          <tr>
+            <td>LINE送信</td>
+            <td><code>LINE_CHANNEL_ACCESS_TOKEN</code> と <code>LINE_USER_ID</code> を環境変数または <code>.env</code> から読む。HTTP失敗時はステータスとレスポンス本文を出して終了コード1。</td>
+          </tr>
+          <tr>
+            <td>ニュース鮮度</td>
+            <td>原則として実行日JSTと前営業日の発生分を採用。<code>max_age_hours</code> は36時間、<code>exclude_if_older_than_hours</code> は72時間。古いニュースは本日の新展開がある場合のみ採用可。</td>
+          </tr>
+          <tr>
+            <td>ニュース出典</td>
+            <td>一次情報、日銀、FRB、JPX、TDnet、EDINET、主要企業ブログ、Reuters、Bloomberg等を優先。出典URLが取れない情報は使わない。</td>
+          </tr>
+          <tr>
+            <td>YouTube字幕取得</td>
+            <td><code>youtube-transcript-api</code> で日本語、英語の順に取得を試みる。字幕がない、動画が無効、取得ブロック時はエラー終了。</td>
+          </tr>
+          <tr>
+            <td>YouTube抽出</td>
+            <td>情報源は <code>transcript.txt</code> のみ。外部検索で銘柄や株価を補わない。同じ銘柄は統合し、最大30件まで抽出。</td>
+          </tr>
+          <tr>
+            <td>動画種別判定</td>
+            <td>文字起こし冒頭の発言から <code>定期/全体</code> または <code>ライブ/個別</code> を判定し、出力重点を切り替える。判定不能時はライブ扱い。</td>
+          </tr>
+          <tr>
+            <td>新着監視</td>
+            <td>YouTube RSSを利用し、APIキーやYouTube Data APIクォータは不要。1回の処理上限は <code>watch.max_new_per_run</code>、標準3件。</td>
+          </tr>
+          <tr>
+            <td>ログ</td>
+            <td>PowerShellランナーは <code>logs/</code> にタイムスタンプ付きログを保存し、30日より古いログを削除する。</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <h2>7. 制約・注意点</h2>
+      <ul>
+        <li><span class="warn">LLM依存:</span> 本文生成と抽出は <code>claude -p</code> とスキル指示に依存するため、LLM利用制限や失敗時は送信まで進まない。</li>
+        <li><span class="warn">外部ネットワーク依存:</span> ニュース調査、YouTube RSS、字幕取得、LINE送信はいずれもネットワーク接続が必要。</li>
+        <li><span class="warn">YouTube字幕:</span> ライブ配信は字幕生成が遅れる、または字幕が存在しないことがある。データセンターIPでは字幕取得がブロックされる場合がある。</li>
+        <li><span class="warn">自動字幕の誤認識:</span> 銘柄名や証券コードは誤変換されることがある。確信が持てないコードは「要確認」として扱う。</li>
+        <li><span class="danger">投資助言ではない:</span> ニュースメモとYouTube銘柄メモは情報整理であり、売買判断や投資助言を目的にしない。</li>
+        <li><span class="warn">二重送信対策:</span> YouTube自動監視はロックファイルで多重起動を避け、送信成功した動画だけ処理済みに記録する。</li>
+        <li><span class="warn">秘密情報:</span> <code>.env</code> にはLINE認証情報を置くためコミットしない。テンプレートは <code>.env.example</code>。</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>8. 代表的な操作</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>目的</th>
+            <th>コマンド</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>初回セットアップ</td>
+            <td><code>python -m venv .venv</code> → <code>.\.venv\Scripts\python.exe -m pip install -r requirements.txt</code></td>
+          </tr>
+          <tr>
+            <td>ニュースメモ生成と送信</td>
+            <td><code>.\run_market_news.ps1 market</code></td>
+          </tr>
+          <tr>
+            <td>YouTube動画URLから銘柄メモ送信</td>
+            <td><code>.\run_youtube_stocks.ps1 "https://www.youtube.com/watch?v=XXXXXXXXXXX"</code></td>
+          </tr>
+          <tr>
+            <td>YouTube監視の初期基準化</td>
+            <td><code>.\.venv\Scripts\python.exe check_new_videos.py --init</code></td>
+          </tr>
+          <tr>
+            <td>YouTube新着監視を手動実行</td>
+            <td><code>.\run_youtube_watch.ps1</code></td>
+          </tr>
+          <tr>
+            <td>本文だけLINE送信</td>
+            <td><code>python send_line.py message.txt</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="note">
+        プロフィールを追加する場合は <code>configs/market.json</code> などをコピーし、
+        <code>profile</code>、<code>title</code>、<code>themes</code>、<code>sections</code>、<code>rules</code> を調整します。
+      </p>
+    </section>
+  </main>
+</body>
+</html>
