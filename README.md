@@ -13,7 +13,7 @@
 
 | ファイル | 役割 |
 |---|---|
-| `.claude/skills/news/SKILL.md` | `/news <profile>` skill。調査〜`message.txt`生成の指示本体 |
+| `.agents/skills/news/SKILL.md` | `/news <profile>` skill。調査〜`message.txt`生成の指示本体 |
 | `configs/*.json` | プロフィール。テーマ・優先ソース・出力構成を定義（**ここを編集して方向性を変える**） |
 | `send_line.py` | LINE Messaging API push 送信。`.env` または環境変数から認証情報を読む |
 | `message.txt` | 生成された送信本文（毎回上書き） |
@@ -60,7 +60,7 @@
 | ファイル | 役割 |
 |---|---|
 | `fetch_transcript.py` | 動画URL/IDの字幕を取得し `transcript.txt` に保存（`youtube-transcript-api`） |
-| `.claude/skills/youtube-stocks/SKILL.md` | `/youtube-stocks` skill。`transcript.txt`→銘柄+見立て抽出→`message.txt` |
+| `.agents/skills/youtube-stocks/SKILL.md` | `/youtube-stocks` skill。`transcript.txt`→銘柄+見立て抽出→`message.txt` |
 | `configs/youtube_stocks.json` | 抽出ルール・出力体裁・監視チャンネル（**ここを編集**） |
 | `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数。手動用） |
 | `check_new_videos.py` | チャンネルRSSで新着検知（APIキー不要）。処理済みは `processed_videos.json` で管理 |
