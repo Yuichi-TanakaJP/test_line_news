@@ -9,6 +9,8 @@ logs/
 message.txt
 transcript.txt
 processed_videos.json
+processed_disclosure_events.json
+.disclosure_events.lock
 
 # Codex local attachments
 .codex-remote-attachments/

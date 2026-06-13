@@ -6,6 +6,7 @@
 2系統のパイプラインを同居:
 - **news** … Web調査ベースの毎日ニュースメモ（`/news` skill）
 - **youtube-stocks** … 株YouTube動画の字幕から銘柄＋見立てを抽出（`/youtube-stocks` skill）
+- **disclosure-events** … 全銘柄の株主優待変更をAPIから検出して通知
 
 どちらも「LLMで本文生成 → `message.txt` → `send_line.py` で送信」を共有する。
 
@@ -16,6 +17,8 @@
 | `.agents/skills/news/SKILL.md` | `/news <profile>` skill。調査〜`message.txt`生成の指示本体 |
 | `configs/*.json` | プロフィール。テーマ・優先ソース・出力構成を定義（**ここを編集して方向性を変える**） |
 | `send_line.py` | LINE Messaging API push 送信。`.env` または環境変数から認証情報を読む |
+| `send_disclosure_events.py` | 未通知の株主優待イベントを取得・整形・送信 |
+| `run_disclosure_events.ps1` | 優待イベント通知の定期実行ランナー |
 | `message.txt` | 生成された送信本文（毎回上書き） |
 | `.env` | `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`（gitignore 済み・コミットしない） |
 | `.env.example` | キー名のテンプレート |
@@ -150,7 +153,34 @@ Unregister-ScheduledTask -TaskName YouTubeStocksLINE_Watch -Confirm:$false  # �
 ```
 LINE_CHANNEL_ACCESS_TOKEN=...
 LINE_USER_ID=...
+MARKET_INFO_API_BASE_URL=https://...
+MINI_TOOLS_BASE_URL=https://mini-tools-rho.vercel.app
 ```
+
+## 株主優待変更の通知
+
+初回は現在のイベントを通知済みにして、過去分の一括送信を防ぐ:
+
+```powershell
+python send_disclosure_events.py --init
+```
+
+送信せず本文だけ確認:
+
+```powershell
+python send_disclosure_events.py --dry-run
+```
+
+定期実行:
+
+```powershell
+.\run_disclosure_events.ps1
+```
+
+- `audience=all` の優待新設・拡充・変更・廃止・要確認を対象にする。
+- 送信成功後だけ `processed_disclosure_events.json` に記録する。
+- 新着がなければ送信せず正常終了する。
+- ランナーは2時間以内の多重起動をロックで回避し、ログを30日保持する。
 
 ## 送信
 
