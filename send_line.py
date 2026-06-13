@@ -30,26 +30,19 @@ def load_dotenv(path):
             os.environ.setdefault(key.strip(), val.strip())
 
 
-def main():
+def send_text(text, token=None, user_id=None):
+    """Send one LINE text message and return the HTTP status."""
     load_dotenv(ENV_PATH)
-    token = os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
-    user_id = os.environ.get("LINE_USER_ID")
+    token = token or os.environ.get("LINE_CHANNEL_ACCESS_TOKEN")
+    user_id = user_id or os.environ.get("LINE_USER_ID")
     if not token or not user_id:
-        print("ERROR: LINE_CHANNEL_ACCESS_TOKEN / LINE_USER_ID not set "
-              "(env or .env).", file=sys.stderr)
-        sys.exit(2)
+        raise ValueError(
+            "LINE_CHANNEL_ACCESS_TOKEN / LINE_USER_ID not set (env or .env)."
+        )
 
-    if len(sys.argv) > 1:
-        with open(sys.argv[1], encoding="utf-8") as f:
-            text = f.read()
-    else:
-        text = sys.stdin.read()
     text = text.strip()
     if not text:
-        print("ERROR: empty message.", file=sys.stderr)
-        sys.exit(2)
-
-    # LINE text message hard limit is 5000 chars.
+        raise ValueError("empty message.")
     if len(text) > 5000:
         text = text[:4997] + "..."
 
@@ -57,7 +50,6 @@ def main():
         "to": user_id,
         "messages": [{"type": "text", "text": text}],
     }).encode("utf-8")
-
     req = urllib.request.Request(
         API_URL,
         data=payload,
@@ -67,9 +59,23 @@ def main():
         },
         method="POST",
     )
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        return resp.status
+
+
+def main():
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], encoding="utf-8") as f:
+            text = f.read()
+    else:
+        text = sys.stdin.read()
+    text = text.strip()
     try:
-        with urllib.request.urlopen(req) as resp:
-            print(f"OK {resp.status}")
+        status = send_text(text)
+        print(f"OK {status}")
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        sys.exit(2)
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", "replace")
         print(f"FAILED HTTP {e.code}\n{body}", file=sys.stderr)
