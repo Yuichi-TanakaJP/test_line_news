@@ -5,6 +5,7 @@ import json
 import os
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -19,7 +20,7 @@ YUTAI_LABELS = {
     "yutai_end": "優待廃止",
     "yutai_review": "優待要確認",
 }
-MAX_EVENTS_PER_RUN = 12
+MAX_EVENTS_PER_RUN = 8
 
 
 def normalize_security_code(code):
@@ -65,10 +66,33 @@ def build_message(payload, items, mini_tools_base):
                 title,
             ]
         )
+        if mini_tools_base:
+            event_id = str(item["event_id"])[:200]
+            query = urllib.parse.urlencode(
+                {
+                    "view": "yutai",
+                    "range": "7",
+                    "event": event_id,
+                }
+            )
+            event_url = (
+                f"{mini_tools_base.rstrip('/')[:250]}/tools/disclosure-radar?{query}"
+            )
+            lines.append(f"確認: {event_url}")
     if mini_tools_base:
         radar_url = f"{mini_tools_base.rstrip('/')}/tools/disclosure-radar"[:400]
         lines.extend(["", f"一覧: {radar_url}"])
     return "\n".join(lines)
+
+
+def select_message_items(payload, items, mini_tools_base, limit=4900):
+    selected = []
+    for item in items[:MAX_EVENTS_PER_RUN]:
+        candidate = [*selected, item]
+        if len(build_message(payload, candidate, mini_tools_base)) > limit:
+            break
+        selected = candidate
+    return selected
 
 
 def load_processed(path=STATE_PATH):
@@ -129,11 +153,11 @@ def main():
             print(f"Initialized {len(current_ids)} event(s).")
             return 0
 
-        unseen = all_unseen[:MAX_EVENTS_PER_RUN]
+        unseen = select_message_items(payload, all_unseen, mini_tools_base)
+        if not unseen:
+            raise ValueError("one disclosure event exceeds the LINE message limit")
         event_ids = {item["event_id"] for item in unseen}
         message = build_message(payload, unseen, mini_tools_base)
-        if len(message) > 4900:
-            raise ValueError("disclosure event message exceeds 4900 characters")
         if args.dry_run:
             print(message)
             return 0

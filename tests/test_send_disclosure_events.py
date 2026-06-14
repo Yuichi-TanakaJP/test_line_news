@@ -3,10 +3,12 @@ import unittest
 from pathlib import Path
 
 from send_disclosure_events import (
+    MAX_EVENTS_PER_RUN,
     build_message,
     load_processed,
     normalize_security_code,
     save_processed,
+    select_message_items,
     select_unseen_yutai,
 )
 
@@ -52,6 +54,8 @@ class DisclosureEventsTest(unittest.TestCase):
             "https://mini.example/tools/disclosure-radar",
             message,
         )
+        self.assertIn("event=yutai-1", message)
+        self.assertIn("range=7", message)
 
     def test_normalizes_only_five_digit_tdnet_code(self):
         self.assertEqual(normalize_security_code("12340"), "1234")
@@ -72,10 +76,45 @@ class DisclosureEventsTest(unittest.TestCase):
         }
         items = [
             {**long_item, "event_id": f"event-{index}"}
-            for index in range(12)
+            for index in range(MAX_EVENTS_PER_RUN)
         ]
         message = build_message(self.payload, items, "https://mini.example/")
         self.assertLessEqual(len(message), 4900)
+
+    def test_select_message_items_stops_before_message_limit(self):
+        items = [
+            {
+                **self.yutai,
+                "event_id": "event-" + ("x" * 1000) + str(index),
+                "company_name": "会" * 1000,
+                "title": "長" * 1000,
+            }
+            for index in range(MAX_EVENTS_PER_RUN)
+        ]
+
+        selected = select_message_items(
+            self.payload,
+            items,
+            "https://mini.example/",
+            limit=1200,
+        )
+
+        self.assertGreater(len(selected), 0)
+        self.assertLess(len(selected), len(items))
+        self.assertGreater(
+            len(
+                build_message(
+                    self.payload,
+                    [*selected, items[len(selected)]],
+                    "https://mini.example/",
+                )
+            ),
+            1200,
+        )
+        self.assertLessEqual(
+            len(build_message(self.payload, selected, "https://mini.example/")),
+            1200,
+        )
 
 
 if __name__ == "__main__":
