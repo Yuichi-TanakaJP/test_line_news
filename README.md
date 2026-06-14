@@ -178,6 +178,7 @@ python send_disclosure_events.py --dry-run
 ```
 
 - `audience=all` の優待新設・拡充・変更・廃止・要確認を対象にする。
+- 各イベントにmini-toolsの対象カードへ移動する確認URLを付ける。
 - 送信成功後だけ `processed_disclosure_events.json` に記録する。
 - 新着がなければ送信せず正常終了する。
 - ランナーは2時間以内の多重起動をロックで回避し、ログを30日保持する。
