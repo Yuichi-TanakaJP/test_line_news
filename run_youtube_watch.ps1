@@ -1,11 +1,21 @@
 # 株YouTubeチャンネル監視ランナー（毎日定期実行用）
 # 1) check_new_videos.py が RSS で新着動画を検知（処理済みは除外）
-# 2) 新着があれば run_youtube_stocks.ps1 で 取得→抽出→LINE送信
+# 2) 新着があれば 取得→抽出→LINE送信
 # 3) 送信成功した動画だけ check_new_videos.py --mark で処理済みに記録
 # 新着がなければ何もせず正常終了。実行ログは logs\ に保存。
 #
-# 初回は一度 `python check_new_videos.py --init` で既存動画を基準化してから
-# このランナーをスケジュール登録すること（過去動画の一括処理を防ぐ）。
+# -Config で監視プロフィールを切り替えられる（既定は Sho's投資情報局）。
+# チャンネル/状態ファイル/字幕ファイル/送信本文ファイルはすべて設定から読むため、
+# 複数チャンネルをそれぞれ別タスクで独立監視できる。
+#   .\run_youtube_watch.ps1                                       # Sho's
+#   .\run_youtube_watch.ps1 -Config configs\youtube_stocks_kamioka.json  # 上岡
+#
+# 初回は一度 `python check_new_videos.py --init --config <設定>` で既存動画を
+# 基準化してから このランナーをスケジュール登録すること（過去動画の一括処理を防ぐ）。
+
+param(
+  [string]$Config = "configs\youtube_stocks.json"
+)
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -14,11 +24,20 @@ Set-Location $Root
 $Py = Join-Path $Root ".venv\Scripts\python.exe"
 if (-not (Test-Path $Py)) { $Py = "python" }
 
+# 設定から字幕/送信本文ファイル名を読む（プロフィールごとに分離して衝突を防ぐ）
+$ConfigPath = if ([System.IO.Path]::IsPathRooted($Config)) { $Config } else { Join-Path $Root $Config }
+if (-not (Test-Path $ConfigPath)) { throw "config not found: $ConfigPath" }
+$Cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$TranscriptFile = if ($Cfg.transcript_file) { $Cfg.transcript_file } else { "transcript.txt" }
+$OutputFile     = if ($Cfg.output_file)     { $Cfg.output_file }     else { "message.txt" }
+# プロフィール識別子（設定ファイル名）をロック/一時ファイル名に使い、多重監視でも衝突しない
+$ProfileName = [System.IO.Path]::GetFileNameWithoutExtension($ConfigPath)
+
 $LogDir = Join-Path $Root "logs"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
 $Stamp = Get-Date -Format "yyyyMMdd_HHmmss"
-$Log = Join-Path $LogDir "watch_$Stamp.log"
-$Lock = Join-Path $Root ".youtube_watch.lock"
+$Log = Join-Path $LogDir "watch_${ProfileName}_$Stamp.log"
+$Lock = Join-Path $Root ".youtube_watch_$ProfileName.lock"
 $LockCreated = $false
 $IdsFile = $null
 
@@ -27,7 +46,7 @@ function Log($msg) {
   $line | Tee-Object -FilePath $Log -Append
 }
 
-Log "=== START youtube_watch ==="
+Log "=== START youtube_watch ($ProfileName) ==="
 
 try {
   # 古いログは溜まり続けると運用時の確認を邪魔するため、直近30日だけ残す。
@@ -52,8 +71,8 @@ try {
   # 1) 新着検知。stdout(動画ID)をファイルに出し、stderr はログへ。
   #    ($ErrorActionPreference=Stop 下で & ... 2>&1 を変数取り込みすると
   #     ストリーム挙動が不安定なため、stdoutはファイル経由で確実に読む)
-  $IdsFile = Join-Path $Root ("new_ids_{0}_{1}.tmp" -f $PID, $Stamp)
-  & $Py check_new_videos.py --list 1> $IdsFile 2>> $Log
+  $IdsFile = Join-Path $Root ("new_ids_{0}_{1}_{2}.tmp" -f $ProfileName, $PID, $Stamp)
+  & $Py check_new_videos.py --list --config $Config 1> $IdsFile 2>> $Log
   $listCode = $LASTEXITCODE
 
   if ($listCode -eq 2) {
@@ -83,35 +102,35 @@ try {
     $url = "https://www.youtube.com/watch?v=$id"
     Log "--- processing $id ---"
 
-    # 2a) 字幕取得 → transcript.txt
-    Remove-Item (Join-Path $Root "transcript.txt") -ErrorAction SilentlyContinue
-    & $Py fetch_transcript.py $url --out transcript.txt 2>&1 | Tee-Object -FilePath $Log -Append
+    # 2a) 字幕取得 → transcript_file
+    Remove-Item (Join-Path $Root $TranscriptFile) -ErrorAction SilentlyContinue
+    & $Py fetch_transcript.py $url --out $TranscriptFile 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       Log "WARN: transcript fetch failed for $id (exit $LASTEXITCODE). skip, not marking."
       continue
     }
 
-    # 2b) Claude (headless) で抽出 → message.txt
-    Remove-Item (Join-Path $Root "message.txt") -ErrorAction SilentlyContinue
-    $null | & claude -p "/youtube-stocks スキルを実行して、transcript.txt から message.txt を生成してください" --model sonnet --allowed-tools "Skill,Read,Write,Glob" --permission-mode acceptEdits 2>&1 | Tee-Object -FilePath $Log -Append
+    # 2b) Claude (headless) で抽出 → output_file
+    Remove-Item (Join-Path $Root $OutputFile) -ErrorAction SilentlyContinue
+    $null | & claude -p "/youtube-stocks スキルを実行して、設定ファイル $Config に従い $TranscriptFile から $OutputFile を生成してください" --model sonnet --allowed-tools "Skill,Read,Write,Glob" --permission-mode acceptEdits 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       Log "WARN: claude extract failed for $id (exit $LASTEXITCODE). skip, not marking."
       continue
     }
-    if (-not (Test-Path (Join-Path $Root "message.txt"))) {
-      Log "WARN: message.txt missing for $id. skip, not marking."
+    if (-not (Test-Path (Join-Path $Root $OutputFile))) {
+      Log "WARN: $OutputFile missing for $id. skip, not marking."
       continue
     }
 
     # 2c) LINE 送信
-    & $Py send_line.py message.txt 2>&1 | Tee-Object -FilePath $Log -Append
+    & $Py send_line.py $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       Log "WARN: send failed for $id (exit $LASTEXITCODE). not marking (will retry next run)."
       continue
     }
 
     # 3) 成功時のみ処理済みに記録
-    & $Py check_new_videos.py --mark $id 2>&1 | Tee-Object -FilePath $Log -Append
+    & $Py check_new_videos.py --mark $id --config $Config 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       throw "check_new_videos.py --mark failed for $id with code $LASTEXITCODE"
     }
