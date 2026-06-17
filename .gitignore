@@ -11,6 +11,12 @@ transcript.txt
 processed_videos.json
 processed_disclosure_events.json
 .disclosure_events.lock
+# per-profile generated files (kamioka 等)
+message_*.txt
+transcript_*.txt
+processed_videos_*.json
+.youtube_watch_*.lock
+new_ids_*.tmp
 
 # Codex local attachments
 .codex-remote-attachments/

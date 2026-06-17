@@ -15,6 +15,10 @@ Usage:
 
 --list の出力は1行1動画ID。呼び出し側スクリプトが各IDを処理し、成功後に
 --mark で記録する想定。
+
+--config で別プロフィール設定を指定できる(既定 configs/youtube_stocks.json)。
+チャンネルや状態ファイル(state_file)は指定した設定から読むため、複数チャンネルを
+別々の状態ファイルで独立監視できる。
 """
 import argparse
 import json
@@ -30,8 +34,8 @@ DEFAULT_STATE = os.path.join(HERE, "processed_videos.json")
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={cid}"
 
 
-def load_config() -> dict:
-    with open(CONFIG_PATH, encoding="utf-8") as f:
+def load_config(path: str = CONFIG_PATH) -> dict:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
@@ -123,10 +127,15 @@ def main() -> None:
     g.add_argument("--init", action="store_true",
                    help="現在のフィード全件を処理済みにして基準化")
     parser.add_argument("--state", default=None, help="状態ファイルのパス")
+    parser.add_argument("--config", default=CONFIG_PATH,
+                        help="プロフィール設定ファイルのパス (既定 configs/youtube_stocks.json)")
     args = parser.parse_args()
 
     sys.stdout.reconfigure(encoding="utf-8")
-    cfg = load_config()
+    config_path = args.config
+    if not os.path.isabs(config_path):
+        config_path = os.path.join(HERE, config_path)
+    cfg = load_config(config_path)
     state_path = args.state or configured_state_path(cfg)
     seen = load_state(state_path)
 
