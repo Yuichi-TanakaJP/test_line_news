@@ -17,7 +17,13 @@ param(
   [string]$Config = "configs\youtube_stocks.json"
 )
 
-$ErrorActionPreference = "Stop"
+# Continue を使う: ネイティブコマンド(python/claude)が stderr に出力すると、
+# Stop 下では PowerShell がそれを終了エラーに昇格させ throw してしまう
+# (例: check_new_videos.py の「no new videos」は stderr なので毎回失敗扱いになる)。
+# 本スクリプトは各ネイティブ呼び出し後に $LASTEXITCODE を明示チェックして手動で
+# throw するため、Continue でも異常検知は失われない。重要な cmdlet には個別に
+# -ErrorAction Stop を付ける。
+$ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $Root
 
@@ -27,7 +33,7 @@ if (-not (Test-Path $Py)) { $Py = "python" }
 # 設定から字幕/送信本文ファイル名を読む（プロフィールごとに分離して衝突を防ぐ）
 $ConfigPath = if ([System.IO.Path]::IsPathRooted($Config)) { $Config } else { Join-Path $Root $Config }
 if (-not (Test-Path $ConfigPath)) { throw "config not found: $ConfigPath" }
-$Cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$Cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
 $TranscriptFile = if ($Cfg.transcript_file) { $Cfg.transcript_file } else { "transcript.txt" }
 $OutputFile     = if ($Cfg.output_file)     { $Cfg.output_file }     else { "message.txt" }
 # プロフィール識別子（設定ファイル名）をロック/一時ファイル名に使い、多重監視でも衝突しない

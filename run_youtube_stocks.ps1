@@ -15,7 +15,10 @@ param(
   [string]$Config = "configs\youtube_stocks.json"
 )
 
-$ErrorActionPreference = "Stop"
+# Continue を使う: ネイティブコマンド(python/claude)の stderr 出力が Stop 下で
+# 終了エラーに昇格して throw されるのを防ぐ。各呼び出し後に $LASTEXITCODE を明示
+# チェックして手動 throw するため異常検知は失われない。重要 cmdlet は個別に Stop。
+$ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $Root
 
@@ -25,7 +28,7 @@ if (-not (Test-Path $Py)) { $Py = "python" }  # フォールバック
 # 設定から字幕/送信本文ファイル名を読む（プロフィールごとに分離）
 $ConfigPath = if ([System.IO.Path]::IsPathRooted($Config)) { $Config } else { Join-Path $Root $Config }
 if (-not (Test-Path $ConfigPath)) { throw "config not found: $ConfigPath" }
-$Cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 | ConvertFrom-Json
+$Cfg = Get-Content $ConfigPath -Raw -Encoding UTF8 -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
 $TranscriptFile = if ($Cfg.transcript_file) { $Cfg.transcript_file } else { "transcript.txt" }
 $OutputFile     = if ($Cfg.output_file)     { $Cfg.output_file }     else { "message.txt" }
 
