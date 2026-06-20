@@ -4,6 +4,11 @@ __pycache__/
 .venv/
 venv/
 
+# packaging (editable install) artifacts
+*.egg-info/
+build/
+dist/
+
 # generated at runtime
 logs/
 message.txt

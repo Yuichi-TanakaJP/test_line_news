@@ -1,11 +1,11 @@
 """Send a text message to LINE via the Messaging API push endpoint.
 
 Usage:
-    python send_line.py message.txt
-    echo "hello" | python send_line.py
+    python -m line_news.line message.txt
+    echo "hello" | python -m line_news.line
 
 Reads LINE_CHANNEL_ACCESS_TOKEN and LINE_USER_ID from the environment,
-falling back to a .env file in the same directory.
+falling back to the repository-root .env file.
 On HTTP failure, prints the status code and response body, then exits 1.
 """
 import json
@@ -14,11 +14,12 @@ import sys
 import urllib.error
 import urllib.request
 
+from line_news.paths import ENV_PATH
+
 API_URL = "https://api.line.me/v2/bot/message/push"
-ENV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 
 
-def load_dotenv(path):
+def load_dotenv(path=ENV_PATH):
     if not os.path.exists(path):
         return
     with open(path, encoding="utf-8") as f:

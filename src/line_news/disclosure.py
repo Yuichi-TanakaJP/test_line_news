@@ -1,4 +1,8 @@
-"""Notify unseen all-company shareholder benefit events via LINE."""
+"""Notify unseen all-company shareholder benefit events via LINE.
+
+Usage:
+    python -m line_news.disclosure [--init] [--dry-run]
+"""
 
 import argparse
 import json
@@ -9,10 +13,10 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from send_line import ENV_PATH, load_dotenv, send_text
+from line_news.line import load_dotenv, send_text
+from line_news.paths import ENV_PATH, PROJECT_ROOT
 
-ROOT = Path(__file__).resolve().parent
-STATE_PATH = ROOT / "processed_disclosure_events.json"
+STATE_PATH = PROJECT_ROOT / "processed_disclosure_events.json"
 YUTAI_LABELS = {
     "yutai_new": "優待新設",
     "yutai_expand": "優待拡充",
@@ -97,7 +101,7 @@ def select_message_items(payload, items, mini_tools_base, limit=4900):
 
 def load_processed(path=STATE_PATH):
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        payload = json.loads(Path(path).read_text(encoding="utf-8"))
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return set()
     values = payload.get("processed_event_ids", [])
@@ -106,7 +110,7 @@ def load_processed(path=STATE_PATH):
 
 def save_processed(processed_ids, path=STATE_PATH):
     payload = {"processed_event_ids": sorted(processed_ids)[-1000:]}
-    path.write_text(
+    Path(path).write_text(
         json.dumps(payload, ensure_ascii=False, indent=2),
         encoding="utf-8",
     )

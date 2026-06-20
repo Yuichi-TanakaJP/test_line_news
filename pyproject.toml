@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "line-news"
+version = "0.1.0"
+description = "毎日のニュース/株YouTube/株主優待を要約・検知して LINE に配信するローカル運用ツール"
+requires-python = ">=3.10"
+dependencies = [
+    "youtube-transcript-api",
+]
+
+[project.scripts]
+# 手動実行用の便利コマンド（PowerShell ランナーは python -m line_news.<name> を使う）
+line-send = "line_news.line:main"
+fetch-transcript = "line_news.transcript:main"
+check-new-videos = "line_news.watch:main"
+send-disclosure-events = "line_news.disclosure:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -35,7 +35,7 @@ description: 指定プロフィール(configs/<profile>.json)に従い最新ニ�
    - 全体 `format.max_chars` 文字以内
    - 末尾に `format.footer` を入れる
 4. 完成した本文を **`message.txt` に上書き保存**する（このファイルのみを書く）。
-   送信はしない（送信は呼び出し側スクリプト `send_line.py` が行う）。
+   送信はしない（送信は呼び出し側スクリプト `line_news.line` が行う）。
 5. ニュース取得に失敗した場合は、取得できた範囲だけで `message.txt` を生成する。
 
 出力は `message.txt` のみ。余計な説明や他ファイルの変更はしないこと。

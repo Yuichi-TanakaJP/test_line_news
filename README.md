@@ -8,16 +8,24 @@
 - **youtube-stocks** … 株YouTube動画の字幕から銘柄＋見立てを抽出（`/youtube-stocks` skill）
 - **disclosure-events** … 全銘柄の株主優待変更をAPIから検出して通知
 
-どちらも「LLMで本文生成 → `message.txt` → `send_line.py` で送信」を共有する。
+どちらも「LLMで本文生成 → `message.txt` → `line_news.line` で送信」を共有する。
 
 ## 構成
 
-| ファイル | 役割 |
+Python ロジックは `src/line_news/` パッケージにまとまっている（`pip install -e .` 済みの venv で
+`python -m line_news.<モジュール>` として実行）。`.ps1` ランナー（リポジトリルート）が
+オーケストレーターとして各モジュールと `claude -p` を呼び出す。
+
+| パス | 役割 |
 |---|---|
 | `.agents/skills/news/SKILL.md` | `/news <profile>` skill。調査〜`message.txt`生成の指示本体 |
 | `configs/*.json` | プロフィール。テーマ・優先ソース・出力構成を定義（**ここを編集して方向性を変える**） |
-| `send_line.py` | LINE Messaging API push 送信。`.env` または環境変数から認証情報を読む |
-| `send_disclosure_events.py` | 未通知の株主優待イベントを取得・整形・送信 |
+| `src/line_news/line.py` | LINE Messaging API push 送信（共有）。`.env` または環境変数から認証情報を読む |
+| `src/line_news/transcript.py` | YouTube字幕取得 |
+| `src/line_news/watch.py` | チャンネルRSSの新着検知 |
+| `src/line_news/disclosure.py` | 未通知の株主優待イベントを取得・整形・送信 |
+| `src/line_news/paths.py` | リポジトリルート基準のパス解決（`configs/`・`.env`・状態ファイル） |
+| `pyproject.toml` | パッケージ定義。`python -m` 実行のため `pip install -e .` する |
 | `run_disclosure_events.ps1` | 優待イベント通知の定期実行ランナー |
 | `message.txt` | 生成された送信本文（毎回上書き） |
 | `.env` | `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`（gitignore 済み・コミットしない） |
@@ -48,12 +56,12 @@
 
 手動（Claude Code 内）:
 
-> `/news market` … 調査して `message.txt` を生成 → `python send_line.py message.txt`
+> `/news market` … 調査して `message.txt` を生成 → `python -m line_news.line message.txt`
 
 自動（毎日 20:00 JST・Windowsタスク）:
 
 > `run_market_news.ps1 [profile]` が `claude -p "/news <profile>"` を headless 実行
-> → `message.txt` 生成 → `send_line.py` で送信。ログは `logs/`。
+> → `message.txt` 生成 → `line_news.line` で送信。ログは `logs/`。
 > 既定プロフィールは `market`。
 
 ## 株YouTube銘柄メモ（youtube-stocks）
@@ -62,20 +70,24 @@
 
 | ファイル | 役割 |
 |---|---|
-| `fetch_transcript.py` | 動画URL/IDの字幕を取得し `transcript.txt` に保存（`youtube-transcript-api`） |
+| `src/line_news/transcript.py` | 動画URL/IDの字幕を取得し `transcript.txt` に保存（`youtube-transcript-api`） |
 | `.agents/skills/youtube-stocks/SKILL.md` | `/youtube-stocks` skill。`transcript.txt`→銘柄+見立て抽出→`message.txt` |
 | `configs/youtube_stocks*.json` | 抽出ルール・出力体裁・監視チャンネル（チャンネルごとに1ファイル。**ここを編集**） |
 | `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数。手動用） |
-| `check_new_videos.py` | チャンネルRSSで新着検知（APIキー不要）。`--config` で対象プロフィールを切替、処理済みは設定の `state_file` で管理 |
+| `src/line_news/watch.py` | チャンネルRSSで新着検知（APIキー不要）。`--config` で対象プロフィールを切替、処理済みは設定の `state_file` で管理 |
 | `run_youtube_watch.ps1` | 新着検知→未処理動画だけ取得→抽出→送信→記録（定期実行用）。`-Config` で監視プロフィールを切替 |
 
-処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `send_line.py` が送信** に分離。
+処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `line_news.line` が送信** に分離。
 
 ### セットアップ（初回のみ）
+
+`line_news` パッケージを editable install すると `python -m line_news.<モジュール>` で実行できる
+（`.ps1` ランナーもこの形で呼ぶ）。
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -e .
 ```
 
 ### 実行
@@ -83,7 +95,7 @@ python -m venv .venv
 字幕取得だけ確認:
 
 ```powershell
-.\.venv\Scripts\python.exe fetch_transcript.py "https://www.youtube.com/live/XXXXXXXXXXX" --out transcript.txt
+.\.venv\Scripts\python.exe -m line_news.transcript "https://www.youtube.com/live/XXXXXXXXXXX" --out transcript.txt
 ```
 
 通しで実行（取得→抽出→送信）:
@@ -105,8 +117,8 @@ Claude Code 内で手動実行する場合は、先に `transcript.txt` を用�
 初回だけ既存動画を基準化（過去動画の一括処理を防ぐ。プロフィールごとに実行）:
 
 ```powershell
-.\.venv\Scripts\python.exe check_new_videos.py --init                                   # Sho's
-.\.venv\Scripts\python.exe check_new_videos.py --init --config configs\youtube_stocks_kamioka.json  # 上岡
+.\.venv\Scripts\python.exe -m line_news.watch --init                                   # Sho's
+.\.venv\Scripts\python.exe -m line_news.watch --init --config configs\youtube_stocks_kamioka.json  # 上岡
 ```
 
 以降は定期実行。新着があれば 取得→抽出→送信→記録 まで自動:
@@ -185,13 +197,13 @@ MINI_TOOLS_BASE_URL=https://mini-tools-rho.vercel.app
 初回は現在のイベントを通知済みにして、過去分の一括送信を防ぐ:
 
 ```powershell
-python send_disclosure_events.py --init
+python -m line_news.disclosure --init
 ```
 
 送信せず本文だけ確認:
 
 ```powershell
-python send_disclosure_events.py --dry-run
+python -m line_news.disclosure --dry-run
 ```
 
 定期実行:
@@ -209,7 +221,7 @@ python send_disclosure_events.py --dry-run
 ## 送信
 
 ```
-python send_line.py message.txt
+python -m line_news.line message.txt
 ```
 
 失敗時は HTTP ステータスコードとレスポンス本文を stderr に出力し、終了コード 1。

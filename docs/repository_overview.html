@@ -498,7 +498,7 @@
             </ul>
           </div>
           <div class="tech-note">
-            技術メモ: <code>send_disclosure_events.py</code> がAPIから未通知イベントを取得・整形・送信し、
+            技術メモ: <code>line_news.disclosure</code> がAPIから未通知イベントを取得・整形・送信し、
             <code>run_disclosure_events.ps1</code> が定期実行とログ管理を担います。
           </div>
         </article>
@@ -532,17 +532,17 @@
             <td><code>market.json</code>、<code>webdesign.json</code>、<code>youtube_stocks.json</code>（Sho's）、<code>youtube_stocks_kamioka.json</code>（上岡）、<code>youtube_stocks_bitasen.json</code>（ビタセン）</td>
           </tr>
           <tr>
-            <td><code>send_line.py</code></td>
-            <td>LINE Messaging APIのpushエンドポイントへテキストを送信。</td>
+            <td><code>src/line_news/line.py</code><br><small>python -m line_news.line</small></td>
+            <td>LINE Messaging APIのpushエンドポイントへテキストを送信（共有モジュール）。</td>
             <td>入力: <code>message.txt</code> またはstdin / 認証: <code>.env</code> または環境変数</td>
           </tr>
           <tr>
-            <td><code>fetch_transcript.py</code></td>
+            <td><code>src/line_news/transcript.py</code><br><small>python -m line_news.transcript</small></td>
             <td>YouTube動画URLまたは動画IDから字幕を取得し、本文テキスト化。</td>
             <td>入力: YouTube URL/ID / 出力: <code>transcript.txt</code></td>
           </tr>
           <tr>
-            <td><code>check_new_videos.py</code></td>
+            <td><code>src/line_news/watch.py</code><br><small>python -m line_news.watch</small></td>
             <td>YouTubeチャンネルRSSから未処理の新着動画を検知・記録。<code>--config</code> でプロフィール切替。</td>
             <td>入力: <code>configs/youtube_stocks*.json</code> / 状態: 設定の <code>watch.state_file</code></td>
           </tr>
@@ -562,7 +562,7 @@
             <td>ログ: <code>logs/watch_&lt;profile&gt;_*.log</code>、ロック: <code>.youtube_watch_&lt;profile&gt;.lock</code></td>
           </tr>
           <tr>
-            <td><code>send_disclosure_events.py</code></td>
+            <td><code>src/line_news/disclosure.py</code><br><small>python -m line_news.disclosure</small></td>
             <td>未通知の株主優待イベントをAPIから取得・整形し、確認URL付きでLINE送信。送信成功分のみ記録。</td>
             <td>状態: <code>processed_disclosure_events.json</code> / 認証: <code>.env</code>（API URL）</td>
           </tr>
@@ -579,7 +579,7 @@
       <h2>3. システム構成図</h2>
       <p>
         ユーザー操作、ローカルランナー、LLMスキル、外部サービスの関係を、運用単位で分けた構成です。
-        2つの配信系統は生成元が異なりますが、最終的には共通の <code>message.txt</code> と <code>send_line.py</code> に合流します。
+        2つの配信系統は生成元が異なりますが、最終的には共通の <code>message.txt</code> と <code>line_news.line</code> に合流します。
       </p>
       <div class="diagram-shell" aria-label="システム構成図">
         <div class="system-map">
@@ -611,7 +611,7 @@
             </div>
             <div class="node">
               <strong>Python補助処理</strong>
-              <small><code>check_new_videos.py</code>: RSS新着検知<br><code>fetch_transcript.py</code>: 字幕取得<br><code>send_disclosure_events.py</code>: 優待イベント検知<br><code>send_line.py</code>: LINE送信</small>
+              <small><code>line_news.watch</code>: RSS新着検知<br><code>line_news.transcript</code>: 字幕取得<br><code>line_news.disclosure</code>: 優待イベント検知<br><code>line_news.line</code>: LINE送信</small>
             </div>
             <div class="node shared">
               <strong>共通成果物</strong>
@@ -656,18 +656,18 @@
         <div class="step">2. ランナーが <code>claude -p "/news &lt;profile&gt;"</code> をheadless実行する。</div>
         <div class="step">3. <code>news</code> スキルが設定ファイルを読み、WebSearch / WebFetchで最新ニュースを調査する。</div>
         <div class="step">4. スキルがLINE向け本文を <code>message.txt</code> に上書き保存する。</div>
-        <div class="step">5. <code>send_line.py</code> が <code>.env</code> の認証情報を読み、LINE Messaging APIへpush送信する。</div>
+        <div class="step">5. <code>line_news.line</code> が <code>.env</code> の認証情報を読み、LINE Messaging APIへpush送信する。</div>
         <div class="step">6. 実行結果とエラーは <code>logs/</code> に記録される。</div>
       </div>
 
       <h3>YouTube銘柄メモ配信</h3>
       <div class="flow">
         <div class="step">1. 手動実行では <code>run_youtube_stocks.ps1 &lt;動画URL&gt;</code>、自動実行では <code>run_youtube_watch.ps1</code> を起動する。</div>
-        <div class="step">2. 自動実行時は <code>check_new_videos.py --list</code> がYouTube RSSから未処理IDを取得する。</div>
-        <div class="step">3. <code>fetch_transcript.py</code> が字幕を取得し、<code>transcript.txt</code> に保存する。</div>
+        <div class="step">2. 自動実行時は <code>line_news.watch --list</code> がYouTube RSSから未処理IDを取得する。</div>
+        <div class="step">3. <code>line_news.transcript</code> が字幕を取得し、<code>transcript.txt</code> に保存する。</div>
         <div class="step">4. <code>claude -p</code> が <code>youtube-stocks</code> スキルを実行し、字幕だけを根拠に <code>message.txt</code> を生成する。</div>
-        <div class="step">5. <code>send_line.py</code> がLINEへ送信する。</div>
-        <div class="step">6. 送信成功時のみ <code>check_new_videos.py --mark &lt;videoId&gt;</code> で処理済みに記録する。</div>
+        <div class="step">5. <code>line_news.line</code> がLINEへ送信する。</div>
+        <div class="step">6. 送信成功時のみ <code>line_news.watch --mark &lt;videoId&gt;</code> で処理済みに記録する。</div>
       </div>
     </section>
 
@@ -714,7 +714,7 @@
             <div class="message span-2-5">8. ファイル作成とサイズを確認</div>
           </div>
           <div class="seq-row">
-            <div class="message send span-2-6">9. <code>send_line.py message.txt</code> が認証情報を読み、LINE push送信</div>
+            <div class="message send span-2-6">9. <code>python -m line_news.line message.txt</code> が認証情報を読み、LINE push送信</div>
           </div>
           <div class="seq-row">
             <div class="message return span-5-6">10. 成功時 <code>OK 200</code>、失敗時はHTTP本文をログへ記録</div>
@@ -745,13 +745,13 @@
             <div class="message span-2-3">2. ロックファイル確認。多重起動中なら正常終了</div>
           </div>
           <div class="seq-row">
-            <div class="message send span-2-4">3. <code>check_new_videos.py --list</code> がYouTube RSSを取得</div>
+            <div class="message send span-2-4">3. <code>line_news.watch --list</code> がYouTube RSSを取得</div>
           </div>
           <div class="seq-row">
             <div class="message return span-2-5">4. <code>processed_videos.json</code> 未登録の動画IDだけ返す</div>
           </div>
           <div class="seq-row">
-            <div class="message send span-2-4">5. 各動画について <code>fetch_transcript.py</code> が字幕を取得</div>
+            <div class="message send span-2-4">5. 各動画について <code>line_news.transcript</code> が字幕を取得</div>
           </div>
           <div class="seq-row">
             <div class="message return span-3-5">6. <code>transcript.txt</code> に文字起こしを保存</div>
@@ -766,10 +766,10 @@
             <div class="message return span-4-5">9. <code>message.txt</code> を上書き生成</div>
           </div>
           <div class="seq-row">
-            <div class="message send span-2-6">10. <code>send_line.py message.txt</code> がLINE push送信</div>
+            <div class="message send span-2-6">10. <code>python -m line_news.line message.txt</code> がLINE push送信</div>
           </div>
           <div class="seq-row">
-            <div class="message return span-5-6">11. 送信成功時のみ <code>check_new_videos.py --mark &lt;videoId&gt;</code></div>
+            <div class="message return span-5-6">11. 送信成功時のみ <code>line_news.watch --mark &lt;videoId&gt;</code></div>
           </div>
           <div class="seq-row">
             <div class="message span-2-5">12. 失敗時は未処理のまま残し、次回実行で再試行</div>
@@ -860,7 +860,7 @@
         <tbody>
           <tr>
             <td>初回セットアップ</td>
-            <td><code>python -m venv .venv</code> → <code>.\.venv\Scripts\python.exe -m pip install -r requirements.txt</code></td>
+            <td><code>python -m venv .venv</code> → <code>.\.venv\Scripts\python.exe -m pip install -r requirements.txt</code> → <code>.\.venv\Scripts\python.exe -m pip install -e .</code></td>
           </tr>
           <tr>
             <td>ニュースメモ生成と送信</td>
@@ -872,7 +872,7 @@
           </tr>
           <tr>
             <td>YouTube監視の初期基準化（プロフィール別）</td>
-            <td><code>.\.venv\Scripts\python.exe check_new_videos.py --init [--config configs\youtube_stocks_kamioka.json]</code></td>
+            <td><code>.\.venv\Scripts\python.exe -m line_news.watch --init [--config configs\youtube_stocks_kamioka.json]</code></td>
           </tr>
           <tr>
             <td>YouTube新着監視を手動実行（プロフィール別）</td>
@@ -880,11 +880,11 @@
           </tr>
           <tr>
             <td>株主優待イベント通知の初期化／確認／実行</td>
-            <td><code>python send_disclosure_events.py --init</code> / <code>--dry-run</code> / <code>.\run_disclosure_events.ps1</code></td>
+            <td><code>python -m line_news.disclosure --init</code> / <code>--dry-run</code> / <code>.\run_disclosure_events.ps1</code></td>
           </tr>
           <tr>
             <td>本文だけLINE送信</td>
-            <td><code>python send_line.py message.txt</code></td>
+            <td><code>python -m line_news.line message.txt</code></td>
           </tr>
         </tbody>
       </table>

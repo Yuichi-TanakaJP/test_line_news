@@ -1,11 +1,15 @@
 # 毎晩のニュースメモ生成 → LINE送信ランナー（ローカルWindowsタスク用）
 # 1) claude -p (headless) が configs/market.json に従い message.txt を生成
-# 2) python send_line.py が message.txt を LINE 送信
+# 2) python -m line_news.line が message.txt を LINE 送信
 # 実行ログは logs\ にタイムスタンプ付きで保存。
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $Root
+
+# line_news パッケージ (editable install 済み) を含む venv の python を使う
+$Py = Join-Path $Root ".venv\Scripts\python.exe"
+if (-not (Test-Path $Py)) { $Py = "python" }
 
 $LogDir = Join-Path $Root "logs"
 if (-not (Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
@@ -41,9 +45,9 @@ try {
   Log "message.txt created ($size bytes)"
 
   # 2) LINE 送信
-  Log "sending via send_line.py ..."
-  & python send_line.py message.txt 2>&1 | Tee-Object -FilePath $Log -Append
-  if ($LASTEXITCODE -ne 0) { throw "send_line.py failed with code $LASTEXITCODE" }
+  Log "sending via line_news.line ..."
+  & $Py -m line_news.line message.txt 2>&1 | Tee-Object -FilePath $Log -Append
+  if ($LASTEXITCODE -ne 0) { throw "line_news.line failed with code $LASTEXITCODE" }
 
   Log "=== DONE (success) ==="
 }

@@ -43,10 +43,10 @@ try {
     Out-Null
   $LockCreated = $true
 
-  & $Py send_disclosure_events.py 2>&1 |
+  & $Py -m line_news.disclosure 2>&1 |
     Tee-Object -FilePath $Log -Append
   if ($LASTEXITCODE -ne 0) {
-    throw "send_disclosure_events.py failed with code $LASTEXITCODE"
+    throw "line_news.disclosure failed with code $LASTEXITCODE"
   }
   Log "=== DONE (success) ==="
 }
