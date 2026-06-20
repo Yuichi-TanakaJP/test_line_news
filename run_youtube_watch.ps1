@@ -1,7 +1,7 @@
 # 株YouTubeチャンネル監視ランナー（毎日定期実行用）
-# 1) check_new_videos.py が RSS で新着動画を検知（処理済みは除外）
+# 1) line_news.watch が RSS で新着動画を検知（処理済みは除外）
 # 2) 新着があれば 取得→抽出→LINE送信
-# 3) 送信成功した動画だけ check_new_videos.py --mark で処理済みに記録
+# 3) 送信成功した動画だけ line_news.watch --mark で処理済みに記録
 # 新着がなければ何もせず正常終了。実行ログは logs\ に保存。
 #
 # -Config で監視プロフィールを切り替えられる（既定は Sho's投資情報局）。
@@ -10,7 +10,7 @@
 #   .\run_youtube_watch.ps1                                       # Sho's
 #   .\run_youtube_watch.ps1 -Config configs\youtube_stocks_kamioka.json  # 上岡
 #
-# 初回は一度 `python check_new_videos.py --init --config <設定>` で既存動画を
+# 初回は一度 `python -m line_news.watch --init --config <設定>` で既存動画を
 # 基準化してから このランナーをスケジュール登録すること（過去動画の一括処理を防ぐ）。
 
 param(
@@ -19,7 +19,7 @@ param(
 
 # Continue を使う: ネイティブコマンド(python/claude)が stderr に出力すると、
 # Stop 下では PowerShell がそれを終了エラーに昇格させ throw してしまう
-# (例: check_new_videos.py の「no new videos」は stderr なので毎回失敗扱いになる)。
+# (例: line_news.watch の「no new videos」は stderr なので毎回失敗扱いになる)。
 # 本スクリプトは各ネイティブ呼び出し後に $LASTEXITCODE を明示チェックして手動で
 # throw するため、Continue でも異常検知は失われない。重要な cmdlet には個別に
 # -ErrorAction Stop を付ける。
@@ -78,7 +78,7 @@ try {
   #    ($ErrorActionPreference=Stop 下で & ... 2>&1 を変数取り込みすると
   #     ストリーム挙動が不安定なため、stdoutはファイル経由で確実に読む)
   $IdsFile = Join-Path $Root ("new_ids_{0}_{1}_{2}.tmp" -f $ProfileName, $PID, $Stamp)
-  & $Py check_new_videos.py --list --config $Config 1> $IdsFile 2>> $Log
+  & $Py -m line_news.watch --list --config $Config 1> $IdsFile 2>> $Log
   $listCode = $LASTEXITCODE
 
   if ($listCode -eq 2) {
@@ -89,7 +89,7 @@ try {
     exit 0
   }
   if ($listCode -ne 0) {
-    throw "check_new_videos.py --list failed with code $listCode"
+    throw "line_news.watch --list failed with code $listCode"
   }
 
   $ids = @(Get-Content $IdsFile -ErrorAction SilentlyContinue |
@@ -110,7 +110,7 @@ try {
 
     # 2a) 字幕取得 → transcript_file
     Remove-Item (Join-Path $Root $TranscriptFile) -ErrorAction SilentlyContinue
-    & $Py fetch_transcript.py $url --out $TranscriptFile 2>&1 | Tee-Object -FilePath $Log -Append
+    & $Py -m line_news.transcript $url --out $TranscriptFile 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       Log "WARN: transcript fetch failed for $id (exit $LASTEXITCODE). skip, not marking."
       continue
@@ -129,16 +129,16 @@ try {
     }
 
     # 2c) LINE 送信
-    & $Py send_line.py $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
+    & $Py -m line_news.line $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       Log "WARN: send failed for $id (exit $LASTEXITCODE). not marking (will retry next run)."
       continue
     }
 
     # 3) 成功時のみ処理済みに記録
-    & $Py check_new_videos.py --mark $id --config $Config 2>&1 | Tee-Object -FilePath $Log -Append
+    & $Py -m line_news.watch --mark $id --config $Config 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
-      throw "check_new_videos.py --mark failed for $id with code $LASTEXITCODE"
+      throw "line_news.watch --mark failed for $id with code $LASTEXITCODE"
     }
     Log "--- done $id ---"
   }

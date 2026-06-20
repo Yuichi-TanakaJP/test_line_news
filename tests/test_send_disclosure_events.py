@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from send_disclosure_events import (
+from line_news.disclosure import (
     MAX_EVENTS_PER_RUN,
     build_message,
     load_processed,

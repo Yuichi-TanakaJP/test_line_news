@@ -1,7 +1,7 @@
 # 株YouTube動画 → 銘柄+見立て抽出 → LINE送信ランナー（ローカルWindowsタスク用）
-# 1) fetch_transcript.py が動画URLの字幕を transcript.txt に保存
+# 1) line_news.transcript が動画URLの字幕を transcript.txt に保存
 # 2) claude -p (headless) が /youtube-stocks skill で message.txt を生成
-# 3) python send_line.py が message.txt を LINE 送信
+# 3) line_news.line が message.txt を LINE 送信
 # 実行ログは logs\ にタイムスタンプ付きで保存。
 #
 # 使い方:
@@ -52,8 +52,8 @@ try {
   # 1) 字幕取得 → transcript_file
   Log "fetching transcript ..."
   Remove-Item (Join-Path $Root $TranscriptFile) -ErrorAction SilentlyContinue
-  & $Py fetch_transcript.py $VideoUrl --out $TranscriptFile 2>&1 | Tee-Object -FilePath $Log -Append
-  if ($LASTEXITCODE -ne 0) { throw "fetch_transcript.py failed with code $LASTEXITCODE" }
+  & $Py -m line_news.transcript $VideoUrl --out $TranscriptFile 2>&1 | Tee-Object -FilePath $Log -Append
+  if ($LASTEXITCODE -ne 0) { throw "line_news.transcript failed with code $LASTEXITCODE" }
 
   # 2) Claude (headless) で /youtube-stocks skill を起動し output_file 生成
   #    プロンプトは明示形にする。引数だけ("/youtube-stocks")だと稀に
@@ -73,9 +73,9 @@ try {
   Log "$OutputFile created ($size bytes)"
 
   # 3) LINE 送信
-  Log "sending via send_line.py ..."
-  & $Py send_line.py $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
-  if ($LASTEXITCODE -ne 0) { throw "send_line.py failed with code $LASTEXITCODE" }
+  Log "sending via line_news.line ..."
+  & $Py -m line_news.line $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
+  if ($LASTEXITCODE -ne 0) { throw "line_news.line failed with code $LASTEXITCODE" }
 
   Log "=== DONE (success) ==="
 }

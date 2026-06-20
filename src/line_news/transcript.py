@@ -1,7 +1,7 @@
 """Fetch a YouTube video transcript and print it as plain text.
 
 Usage:
-    python fetch_transcript.py <video_url_or_id> [--langs ja,en] [--out transcript.txt]
+    python -m line_news.transcript <video_url_or_id> [--langs ja,en] [--out transcript.txt]
 
 Joins the timestamped caption snippets into a single text block so a downstream
 LLM step can read it. Prefers Japanese, falls back to any available transcript

@@ -31,7 +31,7 @@ Script をオーケストレーターにし、Skill は「調査＆原稿生成�
 ```
 run_market_news.ps1（外側）
   ├─ claude -p "/news market"   ← Skill: 調査して message.txt 生成のみ
-  └─ python send_line.py        ← 送信は Skill の外（決定的）
+  └─ python -m line_news.line   ← 送信は Skill の外（決定的）
 ```
 
 理由：
@@ -66,5 +66,5 @@ SKILL.md に送信まで書き claude に Bash 許可すれば Skill が完結�
 - `.claude/skills/news/SKILL.md` — 手順本体
 - `configs/*.json` — プロフィール
 - `run_market_news.ps1` — オーケストレーター
-- `send_line.py` — LINE送信（決定的）
+- `src/line_news/line.py`（`python -m line_news.line`）— LINE送信（決定的）
 - `README.md` — 使い方

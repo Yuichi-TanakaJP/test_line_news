@@ -9,9 +9,9 @@ Channels and limits are read from configs/youtube_stocks.json:
   watch.max_new_per_run      1回で出力する新着の上限 (既定 1)
 
 Usage:
-  python check_new_videos.py --list            未処理の新着動画IDを新しい順に出力 (markしない)
-  python check_new_videos.py --mark <videoId>  指定IDを処理済みとして記録
-  python check_new_videos.py --init            現在のフィード全件を処理済みにして基準化 (初回用)
+  python -m line_news.watch --list            未処理の新着動画IDを新しい順に出力 (markしない)
+  python -m line_news.watch --mark <videoId>  指定IDを処理済みとして記録
+  python -m line_news.watch --init            現在のフィード全件を処理済みにして基準化 (初回用)
 
 --list の出力は1行1動画ID。呼び出し側スクリプトが各IDを処理し、成功後に
 --mark で記録する想定。
@@ -28,9 +28,10 @@ import sys
 import time
 import urllib.request
 
-HERE = os.path.dirname(os.path.abspath(__file__))
-CONFIG_PATH = os.path.join(HERE, "configs", "youtube_stocks.json")
-DEFAULT_STATE = os.path.join(HERE, "processed_videos.json")
+from line_news.paths import DEFAULT_VIDEO_STATE, DEFAULT_YOUTUBE_CONFIG, resolve
+
+CONFIG_PATH = DEFAULT_YOUTUBE_CONFIG
+DEFAULT_STATE = DEFAULT_VIDEO_STATE
 FEED_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={cid}"
 
 
@@ -41,9 +42,7 @@ def load_config(path: str = CONFIG_PATH) -> dict:
 
 def configured_state_path(cfg: dict) -> str:
     state = cfg.get("watch", {}).get("state_file") or DEFAULT_STATE
-    if os.path.isabs(state):
-        return state
-    return os.path.join(HERE, state)
+    return resolve(state)
 
 
 def load_state(path: str) -> set[str]:
@@ -132,10 +131,7 @@ def main() -> None:
     args = parser.parse_args()
 
     sys.stdout.reconfigure(encoding="utf-8")
-    config_path = args.config
-    if not os.path.isabs(config_path):
-        config_path = os.path.join(HERE, config_path)
-    cfg = load_config(config_path)
+    cfg = load_config(resolve(args.config))
     state_path = args.state or configured_state_path(cfg)
     seen = load_state(state_path)
 
