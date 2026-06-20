@@ -26,7 +26,9 @@ new_ids_*.tmp
 # Codex local attachments
 .codex-remote-attachments/
 
+# scratch: プロジェクト無関係の単発スクリプト置き場（PPT生成 make_ai_speed_ppt.py 等）
+scratch/
+
 # generated presentation artifacts
 outputs/
 ai_speed_levels.pptx
-make_ai_speed_ppt.py
