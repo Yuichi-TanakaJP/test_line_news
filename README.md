@@ -64,10 +64,10 @@
 |---|---|
 | `fetch_transcript.py` | 動画URL/IDの字幕を取得し `transcript.txt` に保存（`youtube-transcript-api`） |
 | `.agents/skills/youtube-stocks/SKILL.md` | `/youtube-stocks` skill。`transcript.txt`→銘柄+見立て抽出→`message.txt` |
-| `configs/youtube_stocks.json` | 抽出ルール・出力体裁・監視チャンネル（**ここを編集**） |
+| `configs/youtube_stocks*.json` | 抽出ルール・出力体裁・監視チャンネル（チャンネルごとに1ファイル。**ここを編集**） |
 | `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数。手動用） |
-| `check_new_videos.py` | チャンネルRSSで新着検知（APIキー不要）。処理済みは `processed_videos.json` で管理 |
-| `run_youtube_watch.ps1` | 新着検知→未処理動画だけ取得→抽出→送信→記録（定期実行用・引数不要） |
+| `check_new_videos.py` | チャンネルRSSで新着検知（APIキー不要）。`--config` で対象プロフィールを切替、処理済みは設定の `state_file` で管理 |
+| `run_youtube_watch.ps1` | 新着検知→未処理動画だけ取得→抽出→送信→記録（定期実行用）。`-Config` で監視プロフィールを切替 |
 
 処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `send_line.py` が送信** に分離。
 
@@ -96,28 +96,45 @@ Claude Code 内で手動実行する場合は、先に `transcript.txt` を用�
 
 ### 自動監視（チャンネル新着 → 自動配信）
 
-`configs/youtube_stocks.json` の `channels[].channel_id` に監視対象を設定し、RSSフィード
+プロフィール（`configs/youtube_stocks*.json`）の `channels[].channel_id` に監視対象を設定し、RSSフィード
 （`https://www.youtube.com/feeds/videos.xml?channel_id=...`）で新着を検知する。**APIキー不要・クォータ消費ゼロ**。
 
-初回だけ既存動画を基準化（過去動画の一括処理を防ぐ）:
+チャンネル/状態ファイル/字幕ファイル/送信本文ファイルはすべて設定から読むため、`-Config` を変えるだけで
+**複数チャンネルをそれぞれ別タスクで独立監視**できる（既定は Sho's投資情報局）。
+
+初回だけ既存動画を基準化（過去動画の一括処理を防ぐ。プロフィールごとに実行）:
 
 ```powershell
-.\.venv\Scripts\python.exe check_new_videos.py --init
+.\.venv\Scripts\python.exe check_new_videos.py --init                                   # Sho's
+.\.venv\Scripts\python.exe check_new_videos.py --init --config configs\youtube_stocks_kamioka.json  # 上岡
 ```
 
 以降は定期実行。新着があれば 取得→抽出→送信→記録 まで自動:
 
 ```powershell
-.\run_youtube_watch.ps1
+.\run_youtube_watch.ps1                                              # Sho's（既定）
+.\run_youtube_watch.ps1 -Config configs\youtube_stocks_kamioka.json  # 上岡
+.\run_youtube_watch.ps1 -Config configs\youtube_stocks_bitasen.json  # ビタセン
 ```
 
 - 新着なし→何もせず正常終了。1回の処理上限は `watch.max_new_per_run`（既定3）。
 - RSSは断続的に空応答を返すため `check_new_videos` 側でリトライ。取得全滅時は「新着なし」と区別してスキップ（次回再試行・取りこぼし防止）。
-- 送信成功した動画だけ `processed_videos.json` に記録するので、失敗は次回再試行される（`claude -p` がPro上限に当たって抽出失敗した時も同様に再試行）。
+- 送信成功した動画だけ設定の `state_file`（既定 `processed_videos.json`）に記録するので、失敗は次回再試行される（`claude -p` がPro上限に当たって抽出失敗した時も同様に再試行）。
 
-#### 種別の自動判定（定期/ライブ）
+#### 監視プロフィール一覧
 
-このチャンネルは1日に2セッション（**夕方〜16:50の定期分析** と **夜22時のライブ**）あり、
+各チャンネルを別プロフィール（=別 config）として独立監視する。新規追加は config をコピーして
+`channel_id` / `transcript_file` / `output_file` / `watch.state_file` を一意にし、専用タスクを登録するだけ。
+
+| プロフィール | config | チャンネル | 重点 |
+|---|---|---|---|
+| Sho's（既定） | `youtube_stocks.json` | Sho's投資情報局 | 定期分析＋夜ライブ。種別自動判定（下記） |
+| 上岡 | `youtube_stocks_kamioka.json` | 上岡正明 | その日の市場ニュース解説中心。雑談・宣伝は「与太話(一言)」に圧縮 |
+| ビタセン | `youtube_stocks_bitasen.json` | ビタセン | 優待クロス・短期優待投資。権利月・在庫・取得コスト等の実務情報を厚く |
+
+#### 種別の自動判定（定期/ライブ・Sho's専用）
+
+Sho's は1日に2セッション（**夕方〜16:50の定期分析** と **夜22時のライブ**）あり、
 アーカイブの公開時刻はバラバラ。skill が文字起こし冒頭から種別を判定し、出力の重点を変える
 （`configs/youtube_stocks.json` の `video_types`）:
 - **定期/全体**: 全体動向・マクロ・需給を厚く、個別銘柄は主要なものに絞る
@@ -128,11 +145,17 @@ Claude Code 内で手動実行する場合は、先に `transcript.txt` を用�
 
 #### 定期実行（登録済み Windows タスク）
 
-- タスク名: `YouTubeStocksLINE_Watch`
-- スケジュール: 毎日 **08:00 / 20:00 JST**（`run_youtube_watch.ps1`）
-- 設定: StartWhenAvailable / ExecutionTimeLimit 1時間 / 多重起動は無視
+プロフィールごとに別タスクとして登録（`run_youtube_watch.ps1 -Config <設定>`）。
+共通設定: StartWhenAvailable / ExecutionTimeLimit 1時間 / 多重起動は `.youtube_watch_<profile>.lock` で無視。
+
+| タスク名 | スケジュール(JST) | プロフィール |
+|---|---|---|
+| `YouTubeStocksLINE_Watch` | 毎日 08:00 / 20:00 | Sho's（既定） |
+| `YouTubeStocksLINE_Watch_Kamioka` | 毎日 11:30 | 上岡 |
+| `YouTubeStocksLINE_Watch_Bitasen` | 毎日 20:30 | ビタセン |
 
 ```powershell
+# 例（タスク名を差し替えて使う）
 Get-ScheduledTask -TaskName YouTubeStocksLINE_Watch          # 状態確認
 Disable-ScheduledTask -TaskName YouTubeStocksLINE_Watch      # 一時停止
 Enable-ScheduledTask  -TaskName YouTubeStocksLINE_Watch      # 再開
@@ -144,7 +167,7 @@ Unregister-ScheduledTask -TaskName YouTubeStocksLINE_Watch -Confirm:$false  # �
 - `youtube-transcript-api` は**データセンターIPからブロックされる**ことがある（CI不可な場合あり）。ローカル実行推奨。
 - **ライブ配信は字幕生成が遅れる/無い**ことがある。アーカイブ化後に取得する。
 - 自動字幕は銘柄名・コードを誤変換するため、skill が文脈補正し、**口頭コードは信用せず**不確実なものは「要確認」に回す。
-- チャンネル自動監視（YouTube Data API）は未実装。当面は動画URLを手動で渡す運用。
+- チャンネル自動監視は **RSSフィード方式**（APIキー不要）。YouTube Data API は使わない。手動で個別URLを渡したい場合は `run_youtube_stocks.ps1 <動画URL>`。
 
 ## 認証情報
 
