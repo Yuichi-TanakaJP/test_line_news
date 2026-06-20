@@ -415,10 +415,11 @@
     <div class="wrap hero">
       <h1>test_line_news 機能仕様まとめ</h1>
       <p class="lead">
-        このリポジトリは、毎日の市場ニュースや株式系YouTube動画の内容を自動で要約し、
+        このリポジトリは、毎日の市場ニュース、株式系YouTube動画の内容、株主優待の変更情報を自動で要約・検知し、
         LINEに短いメモとして届けるためのローカル運用ツールです。ユーザーは「どんな情報を集めたいか」を設定しておけば、
-        ツールがニュース調査、YouTube字幕の取得、本文作成、LINE送信までを一連の流れで実行します。
+        ツールがニュース調査、YouTube字幕の取得、優待イベント検知、本文作成、LINE送信までを一連の流れで実行します。
       </p>
+      <p class="lead" style="font-size:13px;color:var(--muted);">最終更新: 2026-06-20</p>
     </div>
   </header>
 
@@ -426,8 +427,9 @@
     <section>
       <h2>1. ユーザーレベルで提供する機能</h2>
       <p>
-        このツールの利用者が受け取るものは、大きく2種類です。1つはその日の市場ニュースをまとめたメモ、
-        もう1つは株式系YouTube動画で話された銘柄や相場観を整理したメモです。どちらも最終的にはLINEのテキストメッセージとして届きます。
+        このツールの利用者が受け取るものは、大きく3種類です。その日の市場ニュースをまとめたメモ、
+        株式系YouTube動画で話された銘柄や相場観を整理したメモ、そして株主優待の変更を検知した通知です。
+        いずれも最終的にはLINEのテキストメッセージとして届きます。
       </p>
       <div class="feature-list">
         <article class="feature-card">
@@ -468,12 +470,36 @@
               <li>動画URLを指定して手動で処理できる</li>
               <li>登録したYouTubeチャンネルの新着動画を自動で検知できる</li>
               <li>一度送信した動画は記録されるため、同じ動画を重複送信しにくい</li>
-              <li>標準設定では毎日08:00 / 20:00 JSTに新着確認が走る</li>
+              <li>チャンネルごとに別プロフィール・別タスクで独立監視できる（Sho's 08:00/20:00、上岡 11:30、ビタセン 20:30 JST）</li>
             </ul>
           </div>
           <div class="tech-note">
-            技術メモ: YouTube RSSで新着を確認し、<code>transcript.txt</code> を作ったうえで
-            <code>youtube-stocks</code> スキルがLINE向けの本文に変換します。
+            技術メモ: YouTube RSSで新着を確認し、字幕ファイルを作ったうえで
+            <code>youtube-stocks</code> スキルがLINE向けの本文に変換します。プロフィール（<code>configs/youtube_stocks*.json</code>）ごとに
+            字幕・出力・状態ファイルを分けて衝突を防ぎます。
+          </div>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-main">
+            <h3><span class="badge">disclosure-events</span>株主優待の変更をLINEで受け取る</h3>
+            <p>
+              全銘柄の株主優待の新設・拡充・変更・廃止などをAPIから検知し、未通知のイベントだけをLINEに届けます。
+              優待の新設や改悪を見逃さず、対象カードを確認するURL付きで把握できます。
+            </p>
+          </div>
+          <div class="feature-points">
+            <h4>主な内容</h4>
+            <ul>
+              <li><code>audience=all</code> の優待 新設・拡充・変更・廃止・要確認 を対象にする</li>
+              <li>各イベントにmini-toolsの対象カードへ移動する確認URLを付ける</li>
+              <li>送信成功したイベントだけ記録し、新着がなければ送信しない</li>
+              <li>ランナーが2時間以内の多重起動をロックで回避する</li>
+            </ul>
+          </div>
+          <div class="tech-note">
+            技術メモ: <code>send_disclosure_events.py</code> がAPIから未通知イベントを取得・整形・送信し、
+            <code>run_disclosure_events.ps1</code> が定期実行とログ管理を担います。
           </div>
         </article>
       </div>
@@ -503,7 +529,7 @@
           <tr>
             <td><code>configs/*.json</code></td>
             <td>配信テーマ、抽出ルール、出力構成、文字数上限、監視チャンネルを定義。</td>
-            <td><code>market.json</code>、<code>webdesign.json</code>、<code>youtube_stocks.json</code></td>
+            <td><code>market.json</code>、<code>webdesign.json</code>、<code>youtube_stocks.json</code>（Sho's）、<code>youtube_stocks_kamioka.json</code>（上岡）、<code>youtube_stocks_bitasen.json</code>（ビタセン）</td>
           </tr>
           <tr>
             <td><code>send_line.py</code></td>
@@ -517,8 +543,8 @@
           </tr>
           <tr>
             <td><code>check_new_videos.py</code></td>
-            <td>YouTubeチャンネルRSSから未処理の新着動画を検知・記録。</td>
-            <td>入力: <code>configs/youtube_stocks.json</code> / 状態: <code>processed_videos.json</code></td>
+            <td>YouTubeチャンネルRSSから未処理の新着動画を検知・記録。<code>--config</code> でプロフィール切替。</td>
+            <td>入力: <code>configs/youtube_stocks*.json</code> / 状態: 設定の <code>watch.state_file</code></td>
           </tr>
           <tr>
             <td><code>run_market_news.ps1</code></td>
@@ -532,8 +558,18 @@
           </tr>
           <tr>
             <td><code>run_youtube_watch.ps1</code></td>
-            <td>新着監視、字幕取得、抽出、送信、処理済み記録を自動実行。</td>
-            <td>ログ: <code>logs/watch_YYYYMMDD_HHMMSS.log</code>、ロック: <code>.youtube_watch.lock</code></td>
+            <td>新着監視、字幕取得、抽出、送信、処理済み記録を自動実行。<code>-Config</code> でプロフィール切替。</td>
+            <td>ログ: <code>logs/watch_&lt;profile&gt;_*.log</code>、ロック: <code>.youtube_watch_&lt;profile&gt;.lock</code></td>
+          </tr>
+          <tr>
+            <td><code>send_disclosure_events.py</code></td>
+            <td>未通知の株主優待イベントをAPIから取得・整形し、確認URL付きでLINE送信。送信成功分のみ記録。</td>
+            <td>状態: <code>processed_disclosure_events.json</code> / 認証: <code>.env</code>（API URL）</td>
+          </tr>
+          <tr>
+            <td><code>run_disclosure_events.ps1</code></td>
+            <td>優待イベント通知の定期実行ランナー。多重起動ロックとログ30日保持を行う。</td>
+            <td>ログ: <code>logs/</code></td>
           </tr>
         </tbody>
       </table>
@@ -551,7 +587,7 @@
             <h3>ユーザー / スケジューラ</h3>
             <div class="node primary">
               <strong>手動実行</strong>
-              <small><code>run_market_news.ps1</code><br><code>run_youtube_stocks.ps1 &lt;動画URL&gt;</code><br><code>run_youtube_watch.ps1</code></small>
+              <small><code>run_market_news.ps1</code><br><code>run_youtube_stocks.ps1 &lt;動画URL&gt;</code><br><code>run_youtube_watch.ps1 [-Config ...]</code><br><code>run_disclosure_events.ps1</code></small>
             </div>
             <div class="node">
               <strong>Windowsタスク</strong>
@@ -559,7 +595,7 @@
             </div>
             <div class="node">
               <strong>Windowsタスク</strong>
-              <small><code>YouTubeStocksLINE_Watch</code><br>毎日08:00 / 20:00 JST</small>
+              <small><code>YouTubeStocksLINE_Watch</code> 08:00/20:00<br><code>..._Kamioka</code> 11:30<br><code>..._Bitasen</code> 20:30 JST</small>
             </div>
           </div>
 
@@ -571,11 +607,11 @@
             </div>
             <div class="node">
               <strong>設定ファイル</strong>
-              <small><code>configs/market.json</code>: ニューステーマ・鮮度・出典<br><code>configs/youtube_stocks.json</code>: 監視チャンネル・抽出ルール</small>
+              <small><code>configs/market.json</code>: ニューステーマ・鮮度・出典<br><code>configs/youtube_stocks*.json</code>: チャンネルごとの監視・抽出ルール</small>
             </div>
             <div class="node">
               <strong>Python補助処理</strong>
-              <small><code>check_new_videos.py</code>: RSS新着検知<br><code>fetch_transcript.py</code>: 字幕取得<br><code>send_line.py</code>: LINE送信</small>
+              <small><code>check_new_videos.py</code>: RSS新着検知<br><code>fetch_transcript.py</code>: 字幕取得<br><code>send_disclosure_events.py</code>: 優待イベント検知<br><code>send_line.py</code>: LINE送信</small>
             </div>
             <div class="node shared">
               <strong>共通成果物</strong>
@@ -777,7 +813,7 @@
           </tr>
           <tr>
             <td>YouTube抽出</td>
-            <td>情報源は <code>transcript.txt</code> のみ。外部検索で銘柄や株価を補わない。同じ銘柄は統合し、最大30件まで抽出。</td>
+            <td>情報源は字幕ファイルのみ。外部検索で銘柄や株価を補わない。同じ銘柄は統合し、プロフィールの <code>extraction.max_stocks</code>（30〜40件）まで抽出。</td>
           </tr>
           <tr>
             <td>動画種別判定</td>
@@ -785,7 +821,11 @@
           </tr>
           <tr>
             <td>新着監視</td>
-            <td>YouTube RSSを利用し、APIキーやYouTube Data APIクォータは不要。1回の処理上限は <code>watch.max_new_per_run</code>、標準3件。</td>
+            <td>YouTube RSSを利用し、APIキーやYouTube Data APIクォータは不要。1回の処理上限は <code>watch.max_new_per_run</code>、標準3件。チャンネルごとに別プロフィール（別 config・別 state_file・別タスク）で独立監視する。</td>
+          </tr>
+          <tr>
+            <td>優待イベント検知</td>
+            <td><code>audience=all</code> の優待 新設・拡充・変更・廃止・要確認 をAPIから取得。各イベントに確認URLを付与し、送信成功分のみ <code>processed_disclosure_events.json</code> に記録。新着がなければ送信しない。</td>
           </tr>
           <tr>
             <td>ログ</td>
@@ -831,12 +871,16 @@
             <td><code>.\run_youtube_stocks.ps1 "https://www.youtube.com/watch?v=XXXXXXXXXXX"</code></td>
           </tr>
           <tr>
-            <td>YouTube監視の初期基準化</td>
-            <td><code>.\.venv\Scripts\python.exe check_new_videos.py --init</code></td>
+            <td>YouTube監視の初期基準化（プロフィール別）</td>
+            <td><code>.\.venv\Scripts\python.exe check_new_videos.py --init [--config configs\youtube_stocks_kamioka.json]</code></td>
           </tr>
           <tr>
-            <td>YouTube新着監視を手動実行</td>
-            <td><code>.\run_youtube_watch.ps1</code></td>
+            <td>YouTube新着監視を手動実行（プロフィール別）</td>
+            <td><code>.\run_youtube_watch.ps1 [-Config configs\youtube_stocks_kamioka.json]</code></td>
+          </tr>
+          <tr>
+            <td>株主優待イベント通知の初期化／確認／実行</td>
+            <td><code>python send_disclosure_events.py --init</code> / <code>--dry-run</code> / <code>.\run_disclosure_events.ps1</code></td>
           </tr>
           <tr>
             <td>本文だけLINE送信</td>
