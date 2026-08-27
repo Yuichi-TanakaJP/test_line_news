@@ -51,6 +51,21 @@ try {
   $size = (Get-Item (Join-Path $Root "message.txt")).Length
   Log "message.txt created ($size bytes)"
 
+  # 生成物を日付つきで残す。message.txt は毎回消して作り直すので、これが
+  # 無いと「最後の1回」しか手元に残らない。ログには全文が出ているが、
+  # 30日で消える上に読み返す形になっていない。
+  #
+  # 残す理由は記録そのものより、スキルの指示が古びていないかを後から
+  # 見比べられるようにするため。似たようなニュースばかりになっていても、
+  # 1回ずつ見ている限り気づけない。
+  $ArchiveDir = Join-Path $Root "outputs\news\$profile"
+  New-Item -ItemType Directory -Force -Path $ArchiveDir | Out-Null
+  $ArchivePath = Join-Path $ArchiveDir ("{0}.md" -f (Get-Date -Format "yyyy-MM-dd"))
+  # 同じ日に2回走ったら上書きする。日付単位で1本あればよく、連番にすると
+  # 見比べるときにどれが本番か分からなくなる。
+  Copy-Item (Join-Path $Root "message.txt") $ArchivePath -Force
+  Log "archived to $ArchivePath"
+
   # 2) LINE 送信
   Log "sending via line_news.line ..."
   & $Py -m line_news.line message.txt 2>&1 | Tee-Object -FilePath $Log -Append

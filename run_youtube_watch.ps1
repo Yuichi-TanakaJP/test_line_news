@@ -1,4 +1,4 @@
-# 株YouTubeチャンネル監視ランナー（毎日定期実行用）
+﻿# 株YouTubeチャンネル監視ランナー（毎日定期実行用）
 # 1) line_news.watch が RSS で新着動画を検知（処理済みは除外）
 # 2) 新着があれば 取得→抽出→LINE送信
 # 3) 送信成功した動画だけ line_news.watch --mark で処理済みに記録
@@ -127,6 +127,14 @@ try {
       Log "WARN: $OutputFile missing for $id. skip, not marking."
       continue
     }
+
+    # 生成物を日付つきで残す（run_market_news.ps1 と同じ理由）。動画ごとに
+    # 1本なので、日付だけでは同じ日の2本目を潰してしまう。動画IDを添える。
+    $ArchiveDir = Join-Path $Root ("outputs\youtube\" + [IO.Path]::GetFileNameWithoutExtension($Config))
+    New-Item -ItemType Directory -Force -Path $ArchiveDir | Out-Null
+    $ArchivePath = Join-Path $ArchiveDir ("{0}_{1}.md" -f (Get-Date -Format "yyyy-MM-dd"), $id)
+    Copy-Item (Join-Path $Root $OutputFile) $ArchivePath -Force
+    Log "archived to $ArchivePath"
 
     # 2c) LINE 送信
     & $Py -m line_news.line $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
