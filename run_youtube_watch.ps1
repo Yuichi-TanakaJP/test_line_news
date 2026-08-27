@@ -128,14 +128,6 @@ try {
       continue
     }
 
-    # 生成物を日付つきで残す（run_market_news.ps1 と同じ理由）。動画ごとに
-    # 1本なので、日付だけでは同じ日の2本目を潰してしまう。動画IDを添える。
-    $ArchiveDir = Join-Path $Root ("outputs\youtube\" + [IO.Path]::GetFileNameWithoutExtension($Config))
-    New-Item -ItemType Directory -Force -Path $ArchiveDir | Out-Null
-    $ArchivePath = Join-Path $ArchiveDir ("{0}_{1}.md" -f (Get-Date -Format "yyyy-MM-dd"), $id)
-    Copy-Item (Join-Path $Root $OutputFile) $ArchivePath -Force
-    Log "archived to $ArchivePath"
-
     # 2c) LINE 送信
     & $Py -m line_news.line $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
