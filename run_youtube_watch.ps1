@@ -58,7 +58,12 @@ try {
   # 古いログは溜まり続けると運用時の確認を邪魔するため、直近30日だけ残す。
   Get-ChildItem $LogDir -Filter "*.log" -File |
     Where-Object { $_.LastWriteTime -lt (Get-Date).AddDays(-30) } |
-    Remove-Item -Force
+    # 失敗しても続ける。掃除は本処理の前段でしかなく、片付けが1件できな
+    # かっただけで送信をやめる理由にならない。2026-08-30、7月分のログ1件が
+    # アクセス拒否になり、$ErrorActionPreference='Stop' がここで try を
+    # 抜けさせ、開始2秒で DONE (failed) になった。ニュース生成も送信も
+    # 一度も走っていない。
+    Remove-Item -Force -ErrorAction SilentlyContinue
 
   # 手動実行やタスク設定変更で多重起動しても二重送信しないようにする。
   if (Test-Path $Lock) {
