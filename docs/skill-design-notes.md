@@ -68,3 +68,9 @@ SKILL.md に送信まで書き claude に Bash 許可すれば Skill が完結�
 - `run_market_news.ps1` — オーケストレーター
 - `src/line_news/line.py`（`python -m line_news.line`）— LINE送信（決定的）
 - `README.md` — 使い方
+
+## Cross-Agent同期
+
+2026-09-09以降、保存場所は変更せず、`.claude/skills/`を編集する正本、`.agents/skills/`を生成先とする。`skill-sync.json`に列挙したSkillを`scripts/sync_agent_skills.py`で同期し、CIでドリフトを検出する。
+
+この境界はSkill本文と同梱ファイルだけを対象とする。Claude/Codex固有metadataが必要になった場合は同一コピーへ混ぜず、provider固有adapterとして別途設計する。
