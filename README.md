@@ -31,6 +31,20 @@ Python ロジックは `src/line_news/` パッケージにまとまっている�
 | `.env` | `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`（gitignore 済み・コミットしない） |
 | `.env.example` | キー名のテンプレート |
 
+### Skillの正本と同期
+
+保存場所は従来どおり維持し、`.claude/skills/`を正本、`.agents/skills/`をCodex向け生成先とする。対象Skillは`skill-sync.json`で明示する。
+
+```powershell
+# 読取専用check（既定）
+python scripts/sync_agent_skills.py
+
+# 正本から生成先へ同期
+python scripts/sync_agent_skills.py --write
+```
+
+Skillを変更するときは`.claude/skills/<name>/`だけを編集し、`--write`で同期してから両方を同じPRへ含める。CIは内容差、欠落、生成先だけにあるファイルを検出する。`--write`は生成先だけに存在するファイルを削除せず、エラーで停止する。
+
 ## ニュースの方向性を変える（3レイヤー）
 
 `configs/<profile>.json` を編集：

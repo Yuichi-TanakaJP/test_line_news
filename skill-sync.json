@@ -1,0 +1,8 @@
+{
+  "canonical": ".claude/skills",
+  "generated": ".agents/skills",
+  "skills": [
+    "news",
+    "youtube-stocks"
+  ]
+}
