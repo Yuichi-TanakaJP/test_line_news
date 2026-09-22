@@ -69,7 +69,10 @@ class YoutubeArchiveTest(unittest.TestCase):
             self.assertEqual(first_path, second_path)
 
             payload = json.loads(first_path.read_text(encoding="utf-8"))
-            expected_bytes = summary.read_bytes()
+            # archive_summary reads the memo as text, so Windows CRLF is
+            # normalized before the content digest and byte count are made.
+            expected_summary = summary.read_text(encoding="utf-8")
+            expected_bytes = expected_summary.encode("utf-8")
             self.assertEqual(payload["schema_version"], 1)
             self.assertEqual(payload["profile"], "youtube_stocks_bitasen")
             self.assertEqual(payload["video_id"], "AbCdEf123_-")
@@ -79,6 +82,8 @@ class YoutubeArchiveTest(unittest.TestCase):
                 hashlib.sha256(expected_bytes).hexdigest(),
             )
             self.assertEqual(payload["summary_byte_count"], len(expected_bytes))
+            self.assertEqual(payload["summary_char_count"], len(expected_summary))
+            self.assertEqual(payload["summary"], expected_summary)
             self.assertIn("テスト要約", payload["summary"])
 
             summary.write_text("別バージョンの要約\n", encoding="utf-8")
