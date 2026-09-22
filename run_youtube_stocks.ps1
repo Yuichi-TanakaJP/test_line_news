@@ -77,7 +77,13 @@ try {
   $size = (Get-Item (Join-Path $Root $OutputFile)).Length
   Log "$OutputFile created ($size bytes)"
 
-  # 3) LINE 送信
+  # 3) 生成済み要約をappend-onlyで保存。
+  #    送信失敗でも要約が残るよう、LINE送信より先に実行する。
+  Log "archiving generated YouTube summary ..."
+  & $Py -m line_news.youtube_archive --config $Config --video-url $VideoUrl --summary-file $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
+  if ($LASTEXITCODE -ne 0) { throw "line_news.youtube_archive failed with code $LASTEXITCODE" }
+
+  # 4) LINE 送信
   Log "sending via line_news.line ..."
   & $Py -m line_news.line $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
   if ($LASTEXITCODE -ne 0) { throw "line_news.line failed with code $LASTEXITCODE" }

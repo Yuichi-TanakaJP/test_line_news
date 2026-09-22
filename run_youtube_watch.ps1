@@ -133,7 +133,15 @@ try {
       continue
     }
 
-    # 2c) LINE 送信
+    # 2c) 生成済み要約をappend-onlyで保存。
+    #     送信前に保存することで、LINE障害時でも要約そのものは失わない。
+    & $Py -m line_news.youtube_archive --config $Config --video-url $url --summary-file $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
+    if ($LASTEXITCODE -ne 0) {
+      Log "WARN: summary archive failed for $id (exit $LASTEXITCODE). skip delivery, not marking."
+      continue
+    }
+
+    # 2d) LINE 送信
     & $Py -m line_news.line $OutputFile 2>&1 | Tee-Object -FilePath $Log -Append
     if ($LASTEXITCODE -ne 0) {
       Log "WARN: send failed for $id (exit $LASTEXITCODE). not marking (will retry next run)."

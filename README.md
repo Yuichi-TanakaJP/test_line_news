@@ -89,9 +89,12 @@ Skillを変更するときは`.claude/skills/<name>/`だけを編集し、`--wri
 | `configs/youtube_stocks*.json` | 抽出ルール・出力体裁・監視チャンネル（チャンネルごとに1ファイル。**ここを編集**） |
 | `run_youtube_stocks.ps1` | 字幕取得→`claude -p`→送信を通しで実行（要 動画URL引数。手動用） |
 | `src/line_news/watch.py` | チャンネルRSSで新着検知（APIキー不要）。`--config` で対象プロフィールを切替、処理済みは設定の `state_file` で管理 |
-| `run_youtube_watch.ps1` | 新着検知→未処理動画だけ取得→抽出→送信→記録（定期実行用）。`-Config` で監視プロフィールを切替 |
+| `run_youtube_watch.ps1` | 新着検知→未処理動画だけ取得→抽出→要約履歴保存→送信→記録（定期実行用）。`-Config` で監視プロフィールを切替 |
+| `src/line_news/youtube_archive.py` | 生成済みLINE要約を動画ID＋内容SHA-256単位で `outputs/youtube-summary-history/` にappend-only保存 |
 
-処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `line_news.line` が送信** に分離。
+処理は **Pythonが字幕取得（確定処理）→ `claude -p` が抽出（LLM, sonnet）→ `line_news.youtube_archive` が要約履歴を保存 → `line_news.line` が送信** に分離。
+
+要約履歴は `outputs/youtube-summary-history/<profile>/<video_id>/<sha256>.json` に保存する。`message*.txt` は次回処理で上書きされる一時ファイルだが、履歴JSONは同一内容の再実行をno-opにし、内容が変わった場合だけ別SHAとして旧版を残す。全文transcriptはこの履歴へ複製しない。
 
 ### セットアップ（初回のみ）
 
@@ -145,6 +148,7 @@ Claude Code 内で手動実行する場合は、先に `transcript.txt` を用�
 
 - 新着なし→何もせず正常終了。1回の処理上限は `watch.max_new_per_run`（既定3）。
 - RSSは断続的に空応答を返すため `check_new_videos` 側でリトライ。取得全滅時は「新着なし」と区別してスキップ（次回再試行・取りこぼし防止）。
+- 生成済み要約はLINE送信より先にappend-only履歴へ保存する。LINE送信に失敗しても要約自体は残る。
 - 送信成功した動画だけ設定の `state_file`（既定 `processed_videos.json`）に記録するので、失敗は次回再試行される（`claude -p` がPro上限に当たって抽出失敗した時も同様に再試行）。
 
 #### 監視プロフィール一覧
