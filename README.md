@@ -269,3 +269,7 @@ Unregister-ScheduledTask -TaskName MarketNewsLINE_Daily -Confirm:$false
 ```
 
 PCがスリープ/オフだった日はスキップ（次回起動時の補完は `StartWhenAvailable` で多少カバー）。
+
+## CIの対象と更新
+
+[CI対象ファイルと更新手順](docs/ci-scope-policy.md)。新規ファイルの扱い、除外リストの更新担当、PR差分と古い実行のキャンセル、利用上限中の検証記録を説明しています。

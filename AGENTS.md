@@ -66,3 +66,7 @@ Creating an output file is not completion. Before reporting a memo as complete:
 
 - For disclosure-message checks, use `python -m line_news.disclosure --dry-run`; do not substitute the sending runner.
 - State clearly when live fetching, Task Scheduler state, external APIs, or LINE delivery were not tested.
+
+## CI scope maintenance
+
+ファイルの追加・移動・用途変更時は [CI対象と更新手順](docs/ci-scope-policy.md) を確認する。新pathは自動除外せず、必要な場合だけ用途・参照を確認して同じPRでYAMLを更新する。変更範囲をローカル検証してまとめてpushし、同じheadのCI/レビューを無条件に再実行しない。

@@ -19,6 +19,11 @@ on:
       - "tests/test_sync_agent_skills.py"
       - ".github/workflows/skill-sync.yml"
 
+# Keep only the latest PR validation; preserve independent main pushes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   check:
     runs-on: ubuntu-latest
