@@ -273,3 +273,17 @@ PCがスリープ/オフだった日はスキップ（次回起動時の補完�
 ## CIの対象と更新
 
 [CI対象ファイルと更新手順](docs/ci-scope-policy.md)。新規ファイルの扱い、除外リストの更新担当、PR差分と古い実行のキャンセル、利用上限中の検証記録を説明しています。
+
+## ローカル依存関係の固定と検査
+
+`requirements.lock` は Windows x64 / CPython 3.12 向けに、宣言済み依存と推移依存を解決した固定版です。uv 0.13.1で公開PyPIのwheelメタデータから生成し、ソースビルドは実行していません。
+
+Health Centerはこの固定ファイルを検査します。実行環境のインストール済み版とは別の記録です。ファイル追加だけでは既存venv・Docker・クラウド配備は更新されません。Linuxや別Python版へこのロックを流用せず、その対象環境で再生成・検証してください。
+
+宣言を変更したら、対象の固定ファイルも次のコマンドで再生成して差分と脆弱性を確認します（環境の更新は別作業）。
+
+```powershell
+uv --no-config pip compile requirements.txt pyproject.toml --python-version 3.12 --python-platform windows --no-build --default-index https://pypi.org/simple --output-file requirements.lock
+```
+
+対象は宣言された依存の解決結果で、任意にインストールされた追加パッケージやパッケージング用build-system依存、OS本体は含みません。
