@@ -141,11 +141,12 @@ class NotificationDiagnosticsTest(unittest.TestCase):
         state_marker = self.root / "simulated-state-write.txt"
         self.guard("import sys,time\nfrom pathlib import Path\nsys.stderr.write('synthetic guard warning\\n');sys.stderr.flush()\ntime.sleep(0.3)\nPath(" + repr(str(state_marker)) + ").write_text('changed')")
         baseline = Path(self.temp.name) / "baseline-native-call.ps1"
-        baseline.write_text("$ErrorActionPreference = 'Stop'\n$Py = '" + sys.executable + "'\n$Runtime = '" + str(self.runtime) + "'\n$Profile = 'youtube_stocks_kamioka'\ntry { & $Py (Join-Path $Runtime 'Guard-LineBaseline.py') $Profile } catch { exit 1 }", encoding="utf-8-sig")
+        baseline.write_text("$ErrorActionPreference = 'Stop'\n$Py = '" + sys.executable + "'\n$Runtime = '" + str(self.runtime) + "'\n$Profile = 'youtube_stocks_kamioka'\ntry { & $Py (Join-Path $Runtime 'Guard-LineBaseline.py') $Profile; exit $LASTEXITCODE } catch { exit 1 }", encoding="utf-8-sig")
         exe = str(Path(os.environ["WINDIR"]) / "System32/WindowsPowerShell/v1.0/powershell.exe")
         old = subprocess.run([exe, "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "RemoteSigned", "-File", str(baseline)], capture_output=True, timeout=25)
         time.sleep(0.6)
         old_wrote_state = state_marker.exists()
+        self.assertTrue(old_wrote_state)
         if state_marker.exists():
             state_marker.unlink()
         new = self.run_wrapper()
@@ -153,6 +154,7 @@ class NotificationDiagnosticsTest(unittest.TestCase):
         self.assertEqual(old.returncode, 0)
         self.assertEqual(new.returncode, old.returncode)
         self.assertEqual(state_marker.exists(), old_wrote_state)
+        self.assertTrue(state_marker.exists())
         self.assertEqual(self.marker.exists(), old.returncode == 0)
 
     def test_guard_launch_error_with_no_exit_code_refuses_runner(self):

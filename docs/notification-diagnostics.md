@@ -20,7 +20,7 @@
 ## 隔離確認
 
 全体検証: `.venv/Scripts/python.exe -m unittest discover -s tests -v`。
-Windows PowerShellを実際に起動する13件の専用テストでは、root/runtime/Python/mutexを隔離先へ差し替え、合成guard・合成runnerだけを実行する。guard起動失敗、404、非HTTP失敗、stderr+終了0の従来成功、stderr後の状態書込を旧native呼出しと比較、差し替え失敗の安全停止、runner失敗、baseline欠落、CheckOnly、ログ書込失敗、market同日予約、disclosure分岐を確認する。実送信や実データ更新はしない。
+13件の専用テスト（うち12件はWindows PowerShellを実際に起動）では、root/runtime/Python/mutexを隔離先へ差し替え、合成guard・合成runnerだけを実行する。guard起動失敗、404、非HTTP失敗、stderr+終了0の従来成功、stderr後の状態書込を旧native呼出しと比較、差し替え失敗の安全停止、runner失敗、baseline欠落、CheckOnly、ログ書込失敗、market同日予約、disclosure分岐を確認する。実送信や実データ更新はしない。
 
 ## 承認後の配備と切戻し
 
